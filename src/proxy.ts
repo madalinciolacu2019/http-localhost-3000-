@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Simple in-memory rate limiting map. 
-// Note: In a distributed edge environment (like Vercel), this only limits per-isolate.
+// Note: In a distributed edge environment (like Vercel/Netlify), this only limits per-isolate.
 // For robust global rate limiting, use Redis (e.g., @upstash/ratelimit).
 const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
 
@@ -51,18 +51,32 @@ export function proxy(request: NextRequest) {
     // If an Origin or Referer is present, it must match our host.
     // Allow if neither is present (e.g. direct API curl, though we could block that too if we wanted strict CSRF).
     if (origin && host) {
-      const originUrl = new URL(origin);
-      if (originUrl.host !== host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return new NextResponse(
+            JSON.stringify({ error: 'Forbidden', message: 'CSRF token mismatch or invalid Origin.' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
         return new NextResponse(
-          JSON.stringify({ error: 'Forbidden', message: 'CSRF token mismatch or invalid Origin.' }),
+          JSON.stringify({ error: 'Forbidden', message: 'Invalid Origin header format.' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }
     } else if (referer && host) {
-      const refererUrl = new URL(referer);
-      if (refererUrl.host !== host) {
+      try {
+        const refererUrl = new URL(referer);
+        if (refererUrl.host !== host) {
+          return new NextResponse(
+            JSON.stringify({ error: 'Forbidden', message: 'CSRF token mismatch or invalid Referer.' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
         return new NextResponse(
-          JSON.stringify({ error: 'Forbidden', message: 'CSRF token mismatch or invalid Referer.' }),
+          JSON.stringify({ error: 'Forbidden', message: 'Invalid Referer header format.' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }
@@ -72,10 +86,9 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// Apply proxy only to API routes
 export const config = {
   matcher: [
-    // Apply middleware only to API routes
     '/api/:path*',
   ],
 };
