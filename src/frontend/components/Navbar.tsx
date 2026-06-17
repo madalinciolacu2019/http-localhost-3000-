@@ -14,7 +14,6 @@ import PushNotificationToggle from '@/frontend/components/PushNotificationToggle
 const baseNavItems = [
   { id: 'home', label: 'Grid', href: '/', icon: Flag },
   { id: 'menu', label: 'Fueling', href: '/menu', icon: Coffee },
-  { id: 'leaderboard', label: 'Setups', href: '/leaderboard', icon: Trophy },
   { id: 'merch', label: 'Gear', href: '/merch', icon: ShoppingBag },
 ];
 
