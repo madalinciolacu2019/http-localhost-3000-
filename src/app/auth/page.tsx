@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/context/AuthContext';
-import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/frontend/context/AuthContext';
+import { useSound } from '@/frontend/context/SoundContext';
 import { useRouter } from 'next/navigation';
 import { Flag, ArrowRight, Eye, EyeOff, Zap, AlertCircle, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/shared/lib/supabase';
+import { isFirebaseConfigured } from '@/shared/lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function AuthPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login');
@@ -18,10 +20,57 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const { playSound } = useSound();
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/paddock-club');
+    }
+    
+    // Remember me email pre-fill
+    const savedEmail = localStorage.getItem('apex_remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+
+    // Load saved accounts
+    try {
+      const dbStr = localStorage.getItem('mock_users_db');
+      if (dbStr) {
+        const db = JSON.parse(dbStr);
+        const accounts = Object.keys(db).map(email => ({
+          email,
+          ...db[email]
+        }));
+        setSavedAccounts(accounts);
+      }
+    } catch (e) {
+      console.error("Could not parse mock db", e);
+    }
+  }, [user, authLoading, router]);
+
+  const handleFastLogin = async (accountEmail: string, accountName: string) => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    playSound('engine-rev');
+
+    const { error } = await signIn(accountEmail, 'fast-login', true, accountName);
+    if (error) {
+      setError(error);
+      playSound('click');
+      setLoading(false);
+    } else {
+      setSuccess('Session authenticated. Entering paddock...');
+      playSound('gear-shift');
+      setTimeout(() => router.push('/paddock-club'), 1500);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,22 +80,30 @@ export default function AuthPage() {
     playSound('engine-rev');
 
     if (tab === 'login') {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email, password, rememberMe, name);
       if (error) {
         setError(error);
         playSound('click');
       } else {
+        if (rememberMe) {
+          localStorage.setItem('apex_remembered_email', email);
+        } else {
+          localStorage.removeItem('apex_remembered_email');
+        }
         setSuccess('Session authenticated. Entering paddock...');
         playSound('gear-shift');
         setTimeout(() => router.push('/paddock-club'), 1500);
       }
     } else {
       if (!name.trim()) { setError('Driver name is required.'); setLoading(false); return; }
-      const { error } = await signUp(email, password, name);
+      const { error } = await signUp(email, password, name, rememberMe);
       if (error) {
         setError(error);
         playSound('click');
       } else {
+        if (rememberMe) {
+          localStorage.setItem('apex_remembered_email', email);
+        }
         setSuccess('Registration confirmed. Check your email to verify your account.');
         playSound('gear-shift');
       }
@@ -147,18 +204,47 @@ export default function AuthPage() {
                 onSubmit={handleSubmit}
                 className="space-y-5"
               >
-                {tab === 'signup' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] font-orbitron">Driver Name</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your racing name"
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-racing-red/50 transition-colors font-orbitron text-[11px]"
-                    />
+                {tab === 'login' && savedAccounts.length > 0 && (
+                  <div className="space-y-2 mb-2">
+                    <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] font-orbitron">
+                      Saved Accounts
+                    </label>
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                      {savedAccounts.map(acc => (
+                        <button
+                          key={acc.email}
+                          type="button"
+                          onClick={() => handleFastLogin(acc.email, acc.full_name)}
+                          className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 p-3 rounded-xl transition-all flex-shrink-0 min-w-[160px] text-left group"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-racing-red/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="font-orbitron font-black text-[10px] text-racing-red uppercase">
+                              {(acc.full_name || acc.email)[0]}
+                            </span>
+                          </div>
+                          <div className="overflow-hidden">
+                            <div className="font-orbitron font-black text-xs text-white truncate">{acc.full_name || 'Driver'}</div>
+                            <div className="text-[9px] text-white/40 font-mono truncate">{acc.role || 'CUSTOMER'}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] font-orbitron">
+                    {tab === 'login' ? 'Driver Name (Optional)' : 'Driver Name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={tab === 'login' ? 'Leave blank to keep current name' : 'Your racing name'}
+                    required={tab === 'signup'}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-racing-red/50 transition-colors font-orbitron text-[11px]"
+                  />
+                </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] font-orbitron">Email</label>
@@ -191,6 +277,57 @@ export default function AuthPage() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                </div>
+
+                {/* Remember Me Checkbox */}
+                <div className="flex items-center justify-between pb-2 pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => {
+                        setRememberMe(e.target.checked);
+                        playSound('click');
+                      }}
+                      className="w-4 h-4 rounded border-white/10 bg-white/5 text-racing-red focus:ring-0 focus:ring-offset-0 accent-racing-red cursor-pointer"
+                    />
+                    <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.15em] font-orbitron hover:text-white transition-colors">
+                      Remember Me
+                    </span>
+                  </label>
+
+                  {tab === 'login' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!email) {
+                          setError('Enter your email above, then click Forgot Password.');
+                          return;
+                        }
+                        playSound('click');
+                        setLoading(true);
+                        setError(null);
+                        try {
+                          if (isSupabaseConfigured) {
+                            await supabase.auth.resetPasswordForEmail(email, {
+                              redirectTo: `${window.location.origin}/auth`,
+                            });
+                          } else if (isFirebaseConfigured) {
+                            const { auth: fbAuth } = await import('@/shared/lib/firebase');
+                            if (fbAuth) await sendPasswordResetEmail(fbAuth, email);
+                          }
+                          setSuccess('Password reset email sent! Check your inbox.');
+                        } catch {
+                          setError('Could not send reset email. Please try again.');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="text-[10px] font-black text-racing-red/60 hover:text-racing-red uppercase tracking-[0.15em] font-orbitron transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
                 </div>
 
                 {/* Error / Success */}

@@ -6,12 +6,18 @@ import { useRouter } from 'next/navigation';
 import { 
   User, Crown, Zap, ShieldCheck, Trophy, ChevronRight,
   Settings, LogOut, CreditCard, History, Target, Bell,
-  Lock, Volume2, Cpu, Package, Clock, CheckCircle
+  Lock, Volume2, Cpu, Package, Clock, CheckCircle, Activity
 } from 'lucide-react';
-import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { useSound } from '@/frontend/context/SoundContext';
+import { useAuth } from '@/frontend/context/AuthContext';
+import { supabase } from '@/shared/lib/supabase';
+import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
+import { 
+  ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, 
+  PolarRadiusAxis, Radar, LineChart, Line, XAxis, YAxis, 
+  CartesianGrid, Tooltip 
+} from 'recharts';
 
 type Order = {
   id: string;
@@ -27,9 +33,11 @@ export default function PaddockClubPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [rewardNotified, setRewardNotified] = useState(false);
+  const [qrUrl, setQrUrl] = useState('http://192.168.1.8:5173/menu');
 
   const [profile, setProfile] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -179,9 +187,14 @@ export default function PaddockClubPage() {
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth');
+      router.push('/paddock-pass');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    // Hardcode to current active network IP
+    setQrUrl('http://192.168.68.60:5173/menu');
+  }, []);
 
   // Fetch orders when history/billing/rewards tab is opened
   useEffect(() => {
@@ -244,6 +257,7 @@ export default function PaddockClubPage() {
     { id: 'rewards', label: 'REWARDS', icon: Crown },
     { id: 'history', label: 'HISTORY', icon: History },
     { id: 'billing', label: 'BILLING', icon: CreditCard },
+    { id: 'telemetry', label: 'TELEMETRY', icon: Activity },
     { id: 'settings', label: 'SETTINGS', icon: Settings },
   ];
 
@@ -301,6 +315,36 @@ export default function PaddockClubPage() {
                 <p className="text-[11px] text-white/70 font-mono leading-relaxed">{toast.message}</p>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQR && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={() => setShowQR(false)}
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8 cursor-pointer"
+          >
+            <div 
+              className="bg-white p-6 rounded-2xl shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <a href={qrUrl} className="block">
+                <QRCodeSVG 
+                  value={qrUrl} 
+                  size={256}
+                  bgColor={"#ffffff"}
+                  fgColor={"#000000"}
+                  level={"H"}
+                />
+              </a>
+            </div>
+            <p className="text-white/50 text-[10px] uppercase font-orbitron tracking-widest mt-6">SCAN AT FUELING STATION</p>
+            <p className="text-racing-red text-[8px] uppercase font-orbitron tracking-widest mt-2">TAP ANYWHERE TO CLOSE</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -480,17 +524,22 @@ export default function PaddockClubPage() {
                                 <span className="text-[6px] text-white/40 font-mono uppercase tracking-widest block">TELEMETRY ID</span>
                                 <span className="text-[9px] text-white font-mono uppercase tracking-wider">{user.id.slice(0, 12).toUpperCase()}...</span>
                               </div>
-                              {/* Mini QR code simulation */}
-                              <div className="w-10 h-10 bg-white p-1 rounded flex items-center justify-center">
-                                <div 
-                                  className="w-full h-full bg-cover"
-                                  style={{ backgroundImage: `url('https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=COFFEEXF1-LOYALTY-${user.id}')` }}
+                              {/* Functional QR code for Points Scanning */}
+                              <div 
+                                className="w-16 h-16 bg-white p-1 rounded flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                                onClick={() => { playSound('click'); setShowQR(true); }}
+                                title="Click to enlarge"
+                              >
+                                <QRCodeSVG 
+                                  value={user.id} 
+                                  size={56}
+                                  bgColor={"#ffffff"}
+                  level={"M"}
                                 />
                               </div>
                             </div>
                           </div>
-
-                          <div className="mt-6 pt-4 border-t border-white/10">
+                          <div className="mt-6 pt-4 border-t border-white/10 hidden md:block">
                             <a 
                               href={`/api/wallet/pass?userId=${user.id}&download=true`} 
                               className="btn-racing !py-2.5 text-[9px] w-full text-center flex items-center justify-center gap-1.5"
@@ -567,12 +616,7 @@ export default function PaddockClubPage() {
                           ORDER COFFEE NOW
                         </button>
                       </Link>
-                      <Link href="/academy">
-                        <button className="btn-racing flex items-center gap-3 text-[11px] !bg-white !text-black hover:!bg-racing-red hover:!text-white border-0" onClick={() => playSound('engine-rev')}>
-                          <Target size={16} />
-                          BOOK SIMULATOR SLOTS
-                        </button>
-                      </Link>
+
                     </div>
                   </div>
                 )}
@@ -788,6 +832,97 @@ export default function PaddockClubPage() {
                           {rewardNotified ? 'NOTIFICATIONS ON' : 'NOTIFY ME'}
                         </span>
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* TELEMETRY TAB */}
+                {activeTab === 'telemetry' && (
+                  <div className="space-y-12 relative z-10">
+                    <div className="flex items-center gap-4 border-b border-white/5 pb-8">
+                      <div className="p-4 bg-racing-red rounded-lg"><Activity size={24} className="text-white" /></div>
+                      <div>
+                        <h2 className="font-orbitron text-2xl font-black italic text-white tracking-tight uppercase">Caffeine Telemetry</h2>
+                        <p className="text-white/30 text-[10px] uppercase tracking-widest">Real-time driver energy logs</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                      {/* G-Force Flavor Radar */}
+                      <div className="glass p-6 border-white/5 rounded-xl space-y-4">
+                        <h3 className="font-orbitron text-xs font-black text-white uppercase tracking-wider">Caffeine G-Force radar</h3>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">
+                          Plots sweet vs. acidic vs. bold profile parameters of your consumption patterns.
+                        </p>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={[
+                              { subject: 'Acidity', A: 70, fullMark: 100 },
+                              { subject: 'Sweetness', A: 85, fullMark: 100 },
+                              { subject: 'Body', A: 90, fullMark: 100 },
+                              { subject: 'Crema', A: 75, fullMark: 100 },
+                              { subject: 'Aftertaste', A: 80, fullMark: 100 },
+                            ]}>
+                              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                              <PolarAngleAxis dataKey="subject" stroke="rgba(255,255,255,0.4)" fontSize={10} fontFamily="monospace" />
+                              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(255,255,255,0.1)" tick={false} />
+                              <Radar name="Fuel Profile" dataKey="A" stroke="#E10600" fill="#E10600" fillOpacity={0.25} />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Caffeine Decay (RoR) */}
+                      <div className="glass p-6 border-white/5 rounded-xl space-y-4">
+                        <h3 className="font-orbitron text-xs font-black text-white uppercase tracking-wider">Caffeine Rate of Rise (RoR)</h3>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">
+                          Simulated absorption and decay of caffeine in the driver's bloodstream over a 12-hour session.
+                        </p>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={[
+                              { hour: '0h', level: 0 },
+                              { hour: '1h', level: 95 },
+                              { hour: '2h', level: 85 },
+                              { hour: '3h', level: 75 },
+                              { hour: '4h', level: 60 },
+                              { hour: '5h', level: 50 },
+                              { hour: '6h', level: 42 },
+                              { hour: '7h', level: 35 },
+                              { hour: '8h', level: 28 },
+                              { hour: '9h', level: 22 },
+                              { hour: '10h', level: 18 },
+                              { hour: '11h', level: 12 },
+                              { hour: '12h', level: 8 },
+                            ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                              <XAxis dataKey="hour" stroke="rgba(255,255,255,0.4)" fontSize={9} fontFamily="monospace" />
+                              <YAxis stroke="rgba(255,255,255,0.4)" fontSize={9} fontFamily="monospace" />
+                              <Tooltip contentStyle={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontFamily: 'monospace', fontSize: 10 }} />
+                              <Line type="monotone" dataKey="level" stroke="#E10600" strokeWidth={2} dot={{ fill: '#E10600', r: 3 }} activeDot={{ r: 5 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sectors and Extraction Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/5">
+                      <div className="glass p-5 border-white/5 rounded-xl">
+                        <span className="text-[8px] text-white/30 font-black tracking-widest uppercase block mb-1">TOTAL FUEL INTAKE</span>
+                        <span className="font-orbitron text-2xl font-black italic text-white tracking-tight">4.2 LITERS</span>
+                        <span className="text-[8px] text-white/40 font-mono block mt-1">12 Cups equivalent logged</span>
+                      </div>
+                      <div className="glass p-5 border-white/5 rounded-xl">
+                        <span className="text-[8px] text-white/30 font-black tracking-widest uppercase block mb-1">AVG EXTRACTION PRESSURE</span>
+                        <span className="font-orbitron text-2xl font-black italic text-green-400 tracking-tight">9.24 BAR</span>
+                        <span className="text-[8px] text-white/40 font-mono block mt-1">Optimal espresso zone calibration</span>
+                      </div>
+                      <div className="glass p-5 border-white/5 rounded-xl">
+                        <span className="text-[8px] text-white/30 font-black tracking-widest uppercase block mb-1">MAX RPM ENERGY SCORE</span>
+                        <span className="font-orbitron text-2xl font-black italic text-pit-yellow tracking-tight">14,800 RPM</span>
+                        <span className="text-[8px] text-white/40 font-mono block mt-1">Peak driver focus sector achieved</span>
+                      </div>
                     </div>
                   </div>
                 )}

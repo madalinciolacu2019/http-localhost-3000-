@@ -6,9 +6,9 @@ import {
   Coffee, Edit3, Save, TrendingUp, AlertTriangle, 
   RotateCw, Plus, Minus, Check, Layers, DollarSign 
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { products as baseProducts } from '@/lib/products';
-import { useSound } from '@/context/SoundContext';
+import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { products as baseProducts } from '@/shared/lib/products';
+import { useSound } from '@/frontend/context/SoundContext';
 
 type AdminProduct = {
   id: number;
@@ -21,6 +21,7 @@ type AdminProduct = {
   stats?: { intensity: string; heat: string };
   color: string;
   is_active: boolean;
+  printful_variant_id?: string;
 };
 
 export default function AdminProductsPage() {
@@ -29,6 +30,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
+  const [editVariantId, setEditVariantId] = useState<string>('');
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
   // Sync products state
@@ -51,7 +53,8 @@ export default function AdminProductsPage() {
             description: p.description || '',
             stock_count: stock,
             price: price,
-            is_active: is_active
+            is_active: is_active,
+            printful_variant_id: ''
           });
         });
         setProducts(localList);
@@ -73,7 +76,8 @@ export default function AdminProductsPage() {
               description: d.description || '',
               image: d.metadata?.image || '/menu_espresso_turbo.png',
               color: d.metadata?.color || 'red',
-              is_active: d.metadata?.is_active ?? true
+              is_active: d.metadata?.is_active ?? true,
+              printful_variant_id: d.metadata?.printful_variant_id || ''
             }));
             setProducts(formatted);
           }
@@ -118,17 +122,19 @@ export default function AdminProductsPage() {
     playSound('click');
     setEditingId(p.id);
     setEditPrice(p.price.toFixed(2));
+    setEditVariantId(p.printful_variant_id || '');
   };
 
   const handleSavePrice = async (id: number) => {
+    const newVariantId = editVariantId;
     playSound('gear-shift');
     const newPriceVal = parseFloat(editPrice);
     if (isNaN(newPriceVal) || newPriceVal <= 0) return;
 
     const updated = products.map(p => {
       if (p.id === id) {
-        updateStorageOrDb(id, { price: newPriceVal });
-        return { ...p, price: newPriceVal };
+        updateStorageOrDb(id, { price: newPriceVal, printful_variant_id: newVariantId });
+        return { ...p, price: newPriceVal, printful_variant_id: newVariantId };
       }
       return p;
     });
@@ -148,7 +154,7 @@ export default function AdminProductsPage() {
     showToast('RESTOCK: Applied +50 units to all ingredients');
   };
 
-  const updateStorageOrDb = async (id: number, updates: { stock_count?: number; price?: number; is_active?: boolean }) => {
+  const updateStorageOrDb = async (id: number, updates: { stock_count?: number; price?: number; is_active?: boolean; printful_variant_id?: string }) => {
     if (!isSupabaseConfigured) {
       if (updates.stock_count !== undefined) {
         localStorage.setItem(`stock_prod_${id}`, updates.stock_count.toString());
@@ -163,6 +169,7 @@ export default function AdminProductsPage() {
       const { data: dbItem } = await supabase.from('products').select('metadata').eq('id', id).single();
       const nextMeta = { ...(dbItem?.metadata || {}) };
       if (updates.is_active !== undefined) nextMeta.is_active = updates.is_active;
+      if (updates.printful_variant_id !== undefined) nextMeta.printful_variant_id = updates.printful_variant_id;
 
       const dbUpdates: any = {};
       if (updates.stock_count !== undefined) dbUpdates.stock_count = updates.stock_count;
@@ -293,24 +300,51 @@ export default function AdminProductsPage() {
                     
                     {/* Price editor block */}
                     {editingId === product.id ? (
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className="text-white/40 font-mono text-xs">€</span>
-                        <input
-                          type="text"
-                          value={editPrice}
-                          onChange={(e) => setEditPrice(e.target.value)}
-                          className="bg-white/5 border border-white/20 rounded px-1.5 py-0.5 font-mono text-xs text-white w-16 focus:outline-none focus:border-racing-red"
-                        />
+                      
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-white/40 font-mono text-[9px] uppercase w-16">Price</span>
+                          <span className="text-white/40 font-mono text-xs">€</span>
+                          <input
+                            type="text"
+                            value={editPrice}
+                            onChange={(e) => setEditPrice(e.target.value)}
+                            className="bg-white/5 border border-white/20 rounded px-1.5 py-0.5 font-mono text-xs text-white w-16 focus:outline-none focus:border-racing-red"
+                          />
+                        </div>
+                        {product.category === 'Merchandise' && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-white/40 font-mono text-[9px] uppercase w-16">Printful ID</span>
+                            <input
+                              type="text"
+                              value={editVariantId}
+                              onChange={(e) => setEditVariantId(e.target.value)}
+                              placeholder="e.g. 11342"
+                              className="bg-white/5 border border-white/20 rounded px-1.5 py-0.5 font-mono text-xs text-white w-20 focus:outline-none focus:border-racing-red"
+                            />
+                          </div>
+                        )}
                         <button
                           onClick={() => handleSavePrice(product.id)}
-                          className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                          className="w-full mt-1 p-1.5 bg-green-500 text-white text-[10px] uppercase font-black tracking-wider rounded hover:bg-green-600 transition-colors flex justify-center items-center gap-2"
                         >
-                          <Check size={12} />
+                          <Check size={12} /> Save Changes
                         </button>
                       </div>
+
                     ) : (
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="font-orbitron font-black text-racing-red text-sm">€{product.price.toFixed(2)}</span>
+                        
+                        <div className="flex flex-col">
+                          <span className="font-orbitron font-black text-racing-red text-sm">€{product.price.toFixed(2)}</span>
+                          {product.category === 'Merchandise' && product.printful_variant_id && (
+                            <span className="text-[8px] font-mono text-white/40 mt-1">Printful ID: {product.printful_variant_id}</span>
+                          )}
+                          {product.category === 'Merchandise' && !product.printful_variant_id && (
+                            <span className="text-[8px] font-mono text-yellow-500 mt-1">Printful ID: Missing!</span>
+                          )}
+                        </div>
+
                         <button 
                           onClick={() => handleStartEdit(product)}
                           className="text-white/20 hover:text-white transition-colors"

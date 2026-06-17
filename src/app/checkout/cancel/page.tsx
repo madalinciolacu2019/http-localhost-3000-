@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { XCircle, ArrowLeft, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useSound } from '@/context/SoundContext';
+import { useSound } from '@/frontend/context/SoundContext';
 
 export default function CheckoutCancelPage() {
   const { playSound } = useSound();

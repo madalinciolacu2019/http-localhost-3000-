@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/context/AuthContext';
-import { useSound } from '@/context/SoundContext';
+import { useCart } from '@/frontend/context/CartContext';
+import { useAuth } from '@/frontend/context/AuthContext';
+import { useSound } from '@/frontend/context/SoundContext';
 import { 
   ArrowRight, Lock, Zap, ShoppingCart, ArrowLeft, 
   ExternalLink, AlertTriangle, FlaskConical, CreditCard,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Helper to compute F1 team styles based on mock card numbers (cheat codes)
 const getTeamInfo = (number: string) => {
@@ -62,16 +63,45 @@ const getTeamInfo = (number: string) => {
   };
 };
 
+const getVatBreakdown = (items: any[], shippingCost: number, subtotal: number, totalPrice: number) => {
+  const discountRatio = subtotal > 0 ? totalPrice / subtotal : 1;
+  let coffeeBase = 0;
+  let merchBase = 0;
+
+  items.forEach(item => {
+    const isCoffee = ['Espresso', 'Milk Based', 'Iced'].includes(item.product.category);
+    const itemTotal = item.product.price * item.quantity;
+    const discountedTotal = itemTotal * discountRatio;
+    if (isCoffee) {
+      coffeeBase += discountedTotal;
+    } else {
+      merchBase += discountedTotal;
+    }
+  });
+
+  const coffeeVat = coffeeBase * 0.09;
+  const merchVat = merchBase * 0.19;
+  const shippingVat = shippingCost * 0.19;
+
+  return {
+    coffeeVat,
+    merchVat,
+    shippingVat,
+    totalVat: coffeeVat + merchVat + shippingVat,
+    netAmount: totalPrice
+  };
+};
+
 export default function CheckoutPage() {
-  const { items, totalPrice, totalItems } = useCart();
-  const { user } = useAuth();
+  const { items, totalPrice, subtotal, bundleDiscount, totalItems } = useCart();
+  const { user, session } = useAuth();
   const { playSound } = useSound();
   const router = useRouter();
   
   // Checkout loading/error states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stripeNotConfigured, setStripeNotConfigured] = useState(false);
+  const [paypalNotConfigured, setPaypalNotConfigured] = useState(false);
   
   // Custom Card Input states
   const [cardNumber, setCardNumber] = useState('');
@@ -81,7 +111,7 @@ export default function CheckoutPage() {
   const [isFlipped, setIsFlipped] = useState(false);
   
   // Flow management
-  const [activeTab, setActiveTab] = useState<'card' | 'stripe'>('card');
+  const [activeTab, setActiveTab] = useState<'card' | 'paypal'>('card');
   const [paymentStage, setPaymentStage] = useState<'idle' | 'uplink' | 'handshake' | 'verifying' | 'complete'>('idle');
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -93,7 +123,19 @@ export default function CheckoutPage() {
   const [shippingAddress, setShippingAddress] = useState('');
   const [shippingCity, setShippingCity] = useState('');
   const [shippingPostcode, setShippingPostcode] = useState('');
-  const [shippingCountry, setShippingCountry] = useState('Italy');
+  const [shippingCountry, setShippingCountry] = useState('');
+
+  // Billing & Tax Compliance state
+  const [isB2B, setIsB2B] = useState(false);
+  const [billingName, setBillingName] = useState('');
+  const [billingCui, setBillingCui] = useState('');
+  const [billingJ, setBillingJ] = useState('');
+  const [billingIban, setBillingIban] = useState('');
+  const [billingBank, setBillingBank] = useState('');
+  const [billingAddress, setBillingAddress] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingPostcode, setBillingPostcode] = useState('');
+  const [billingCountry, setBillingCountry] = useState('');
 
   // Auto-fill user contact info if logged in
   useEffect(() => {
@@ -114,6 +156,7 @@ export default function CheckoutPage() {
     return 0.00;
   };
   const shippingCost = getShippingCost(fulfillmentMethod);
+  const vatBreakdown = getVatBreakdown(items, shippingCost, subtotal, totalPrice);
 
   // Calculate team color info
   const teamInfo = getTeamInfo(cardNumber);
@@ -128,65 +171,55 @@ export default function CheckoutPage() {
   }, [cardNumber]);
 
   // Real Stripe Checkout API trigger
-  const handleStripeCheckout = async () => {
-    if (items.length === 0) return;
-    
-    // Address validation
+  
+  const createPayPalOrder = async () => {
+    if (items.length === 0) return null;
     if (!customerName || !customerEmail || !customerPhone) {
-      setError('Please complete contact info (Name, Email, Phone) before connecting Stripe.');
-      return;
+      setError('Please complete contact info before connecting PayPal.');
+      return null;
     }
-    if (fulfillmentMethod !== 'counter') {
-      if (!shippingAddress || !shippingCity || !shippingPostcode || !shippingCountry) {
-        setError('Please complete shipping coordinates.');
-        return;
-      }
+    const referrerId = typeof window !== 'undefined' ? localStorage.getItem('apex_referrer') || '' : '';
+    
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`
+      },
+      body: JSON.stringify({ 
+        items, 
+        userId: user?.id,
+        referrerId,
+        fulfillmentMethod,
+        customerName,
+        customerEmail,
+        customerPhone,
+        shippingAddress: fulfillmentMethod === 'counter' ? '' : shippingAddress,
+        shippingCity: fulfillmentMethod === 'counter' ? '' : shippingCity,
+        shippingPostcode: fulfillmentMethod === 'counter' ? '' : shippingPostcode,
+        shippingCountry: fulfillmentMethod === 'counter' ? '' : shippingCountry,
+        shippingCost,
+        bundleDiscount,
+        isB2B,
+        billingName: isB2B ? billingName : customerName,
+        billingAddress: isB2B ? billingAddress : (fulfillmentMethod === 'counter' ? '' : shippingAddress),
+      }),
+    });
+    
+    const data = await res.json();
+    if (data.error) {
+      setError(data.error);
+      return null;
     }
+    return data.id;
+  };
 
+  const onPayPalApprove = async (data: any, actions: any) => {
     setLoading(true);
-    setError(null);
-    setStripeNotConfigured(false);
-    playSound('engine-rev');
-
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          items, 
-          userId: user?.id,
-          fulfillmentMethod,
-          customerName,
-          customerEmail,
-          customerPhone,
-          shippingAddress: fulfillmentMethod === 'counter' ? '' : shippingAddress,
-          shippingCity: fulfillmentMethod === 'counter' ? '' : shippingCity,
-          shippingPostcode: fulfillmentMethod === 'counter' ? '' : shippingPostcode,
-          shippingCountry: fulfillmentMethod === 'counter' ? '' : shippingCountry,
-          shippingCost,
-          vat: totalPrice * 0.08
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.error === 'STRIPE_NOT_CONFIGURED') {
-        setStripeNotConfigured(true);
-        setLoading(false);
-        return;
-      }
-
-      if (data.error) {
-        setError(data.error);
-        setLoading(false);
-        return;
-      }
-
-      window.location.href = data.url;
-    } catch {
-      setError('Network error. Please check your connection and try again.');
-      setLoading(false);
-    }
+    // In a real app, you would call your backend to capture the order
+    // e.g. await fetch('/api/webhook/paypal-capture', { ... })
+    // For now we just redirect
+    router.push(`/checkout/success?session_id=${data.orderID}`);
   };
 
   // Simulated Telemetry-Driven Checkout sequence
@@ -201,6 +234,14 @@ export default function CheckoutPage() {
     if (fulfillmentMethod !== 'counter') {
       if (!shippingAddress || !shippingCity || !shippingPostcode || !shippingCountry) {
         setError('Please complete shipping coordinates.');
+        return;
+      }
+    }
+
+    // B2B validation
+    if (isB2B) {
+      if (!billingName || !billingCui || !billingJ || !billingIban || !billingBank || !billingAddress || !billingCity || !billingPostcode || !billingCountry) {
+        setError('Please complete all company billing fields (including J, Bank, and IBAN) for B2B invoice.');
         return;
       }
     }
@@ -247,14 +288,15 @@ export default function CheckoutPage() {
       // Execute the order creation storage trigger
       const demoId = 'demo_' + Math.random().toString(36).slice(2, 14).toUpperCase();
       localStorage.setItem(
-        `order_${demoId}`,
+        `order_demo_${demoId}`,
         JSON.stringify({
           id: demoId,
           ref: demoId.replace('demo_', ''),
-          subtotal: totalPrice,
-          vat: totalPrice * 0.08,
+          subtotal: subtotal,
+          bundleDiscount: bundleDiscount,
+          vat: vatBreakdown.totalVat,
           shippingCost: shippingCost,
-          total: totalPrice + (totalPrice * 0.08) + shippingCost,
+          total: totalPrice + vatBreakdown.totalVat + shippingCost,
           currency: 'EUR',
           fulfillmentMethod,
           customerName,
@@ -264,6 +306,16 @@ export default function CheckoutPage() {
           shippingCity: fulfillmentMethod === 'counter' ? '' : shippingCity,
           shippingPostcode: fulfillmentMethod === 'counter' ? '' : shippingPostcode,
           shippingCountry: fulfillmentMethod === 'counter' ? '' : shippingCountry,
+          isB2B,
+          billingName: isB2B ? billingName : customerName,
+          billingCui: isB2B ? billingCui : '',
+          billingJ: isB2B ? billingJ : '',
+          billingIban: isB2B ? billingIban : '',
+          billingBank: isB2B ? billingBank : '',
+          billingAddress: isB2B ? billingAddress : (fulfillmentMethod === 'counter' ? '' : shippingAddress),
+          billingCity: isB2B ? billingCity : (fulfillmentMethod === 'counter' ? '' : shippingCity),
+          billingPostcode: isB2B ? billingPostcode : (fulfillmentMethod === 'counter' ? '' : shippingPostcode),
+          billingCountry: isB2B ? billingCountry : (fulfillmentMethod === 'counter' ? '' : shippingCountry),
           items: items.map(i => ({
             product_id: i.product.id,
             product_name: i.product.name,
@@ -362,7 +414,7 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 {items.map((item) => (
                   <motion.div
-                    key={item.product.id}
+                    key={`${item.product.id}-${item.size || 'default'}-${item.isSubscription ? 'sub' : 'oneoff'}-${item.eventDate || 'nodate'}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="glass border-white/5 rounded-xl p-4 flex gap-4 items-center hover:border-racing-red/20 transition-all bg-white/3"
@@ -387,12 +439,32 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
                   <span>ITEMS SUBTOTAL</span>
-                  <span>€{totalPrice.toFixed(2)}</span>
+                  <span>€{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
-                  <span>8% VAT TAX</span>
-                  <span>€{(totalPrice * 0.08).toFixed(2)}</span>
-                </div>
+                {bundleDiscount > 0 && (
+                  <div className="flex justify-between text-[10px] text-racing-red font-orbitron tracking-widest">
+                    <span>PIT STOP BUNDLE (10% OFF)</span>
+                    <span>-€{bundleDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {vatBreakdown.coffeeVat > 0 && (
+                  <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
+                    <span>9% VAT (COFFEE/DRINKS)</span>
+                    <span>€{vatBreakdown.coffeeVat.toFixed(2)}</span>
+                  </div>
+                )}
+                {vatBreakdown.merchVat > 0 && (
+                  <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
+                    <span>19% VAT (MERCHANDISE)</span>
+                    <span>€{vatBreakdown.merchVat.toFixed(2)}</span>
+                  </div>
+                )}
+                {vatBreakdown.shippingVat > 0 && (
+                  <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
+                    <span>19% VAT (DELIVERY)</span>
+                    <span>€{vatBreakdown.shippingVat.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-[10px] text-white/40 font-orbitron tracking-widest">
                   <span>DELIVERY FEE ({fulfillmentMethod.toUpperCase()})</span>
                   <span>{shippingCost === 0 ? 'FREE' : `€${shippingCost.toFixed(2)}`}</span>
@@ -401,7 +473,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-baseline">
                   <span className="font-orbitron text-xs font-black text-white">GRAND TOTAL</span>
                   <span className="font-orbitron text-xl font-black text-racing-red">
-                    €{(totalPrice + (totalPrice * 0.08) + shippingCost).toFixed(2)}
+                    €{(totalPrice + vatBreakdown.totalVat + shippingCost).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -600,6 +672,174 @@ export default function CheckoutPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                {/* B2B Invoicing Toggle */}
+                <div className="pt-6 border-t border-white/5 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="b2b-invoice-toggle"
+                      checked={isB2B}
+                      onChange={(e) => {
+                        playSound('click');
+                        setIsB2B(e.target.checked);
+                      }}
+                      className="w-4 h-4 rounded border-white/15 bg-white/3 text-racing-red focus:ring-0 focus:outline-none accent-racing-red"
+                    />
+                    <label htmlFor="b2b-invoice-toggle" className="font-orbitron text-[10px] font-black text-white/60 hover:text-white tracking-widest uppercase cursor-pointer select-none transition-colors">
+                      REQUEST B2B COMPANY INVOICE (SRL / PFA)
+                    </label>
+                  </div>
+
+                  <AnimatePresence>
+                    {isB2B && (
+                      <motion.div
+                        key="b2b-form-section"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-4 pt-2 overflow-hidden"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">COMPANY NAME (BILLING NAME)</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingName}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingName(e.target.value);
+                              }}
+                              placeholder="E.G. RED BULL RACING SRL"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-orbitron text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">COMPANY REGISTRATION CODE (CUI/CIF)</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingCui}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingCui(e.target.value.toUpperCase());
+                              }}
+                              placeholder="E.G. RO12345678"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">TRADE REGISTRY NUMBER (REG. COM.)</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingJ}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingJ(e.target.value.toUpperCase());
+                              }}
+                              placeholder="E.G. J40/12345/2026"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">BANK NAME</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingBank}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingBank(e.target.value);
+                              }}
+                              placeholder="E.G. BANCA TRANSILVANIA"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-orbitron text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">BANK ACCOUNT (IBAN)</label>
+                          <input
+                            type="text"
+                            required={isB2B}
+                            value={billingIban}
+                            onChange={(e) => {
+                              playSound('click');
+                              setBillingIban(e.target.value.toUpperCase());
+                            }}
+                            placeholder="E.G. RO12BTRL01301202345678XX"
+                            className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">BILLING ADDRESS</label>
+                          <input
+                            type="text"
+                            required={isB2B}
+                            value={billingAddress}
+                            onChange={(e) => {
+                              playSound('click');
+                              setBillingAddress(e.target.value);
+                            }}
+                            placeholder="E.G. STR. STARTULUI, NR. 1"
+                            className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-orbitron text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">CITY</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingCity}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingCity(e.target.value);
+                              }}
+                              placeholder="E.G. BUCHAREST"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-orbitron text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">POSTCODE</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingPostcode}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingPostcode(e.target.value);
+                              }}
+                              placeholder="E.G. 010011"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="font-orbitron text-[9px] font-black text-white/40 tracking-wider uppercase">COUNTRY</label>
+                            <input
+                              type="text"
+                              required={isB2B}
+                              value={billingCountry}
+                              onChange={(e) => {
+                                playSound('click');
+                                setBillingCountry(e.target.value);
+                              }}
+                              placeholder="E.G. ROMANIA"
+                              className="w-full bg-white/3 border border-white/10 rounded-xl px-4 py-3 font-orbitron text-xs text-white focus:outline-none focus:border-racing-red focus:bg-white/5 transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             )}
 
@@ -633,16 +873,16 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => {
                     playSound('gear-shift');
-                    setActiveTab('stripe');
+                    setActiveTab('paypal');
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-orbitron text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                    activeTab === 'stripe' 
+                    activeTab === 'paypal' 
                       ? 'bg-racing-red text-white shadow-[0_0_15px_rgba(225,6,0,0.3)]' 
                       : 'text-white/40 hover:text-white'
                   }`}
                 >
                   <Lock size={12} />
-                  STRIPE GATEWAY
+                  PAYPAL GATEWAY
                 </button>
               </div>
             )}
@@ -801,6 +1041,7 @@ export default function CheckoutPage() {
                       <span>CHASSIS PASS CHEAT CODES ENABLED</span>
                       <span>AMEX/VISA/MC SUPPORTED</span>
                     </div>
+
                   </div>
 
                   <div className="space-y-1">
@@ -866,59 +1107,27 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
-            {/* Tab 2 Content: Real Stripe Checkout */}
-            {paymentStage === 'idle' && activeTab === 'stripe' && (
+            
+            {/* Tab 2 Content: Real PayPal Checkout */}
+            {paymentStage === 'idle' && activeTab === 'paypal' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                {/* Stripe description info */}
                 <div className="glass p-6 rounded-2xl border-white/5 bg-white/3 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Lock className="text-racing-red" size={16} />
                       <span className="font-orbitron text-[10px] text-white/60 font-black tracking-widest uppercase">
-                        STRIPE SECURE CHECKS
+                        PAYPAL SECURE CHECKS
                       </span>
                     </div>
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   </div>
-
                   <p className="text-xs text-white/50 font-orbitron leading-relaxed">
-                    Stripe is the world-class payment platform. Click below to securely connect your chassis profile to Stripe's payment terminal to authorize your transaction.
+                    Pay securely using your PayPal account or Credit Card via PayPal's gateway.
                   </p>
-
-                  <div className="border-t border-white/5 pt-4 flex gap-4 text-[9px] text-white/20 font-orbitron uppercase tracking-widest">
-                    <span>256-bit encryption</span>
-                    <span>·</span>
-                    <span>PCI DSS Compliant</span>
-                  </div>
                 </div>
-
-                {/* Configuration notice if keys are missing */}
-                {stripeNotConfigured && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass border-pit-yellow/30 bg-pit-yellow/5 rounded-xl p-5 space-y-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle size={18} className="text-pit-yellow flex-shrink-0" />
-                      <p className="font-orbitron text-[10px] font-black text-pit-yellow tracking-wider uppercase">
-                        Stripe Configuration Required
-                      </p>
-                    </div>
-                    <p className="text-[10px] text-white/50 font-orbitron leading-relaxed">
-                      Add your Stripe credentials to <span className="text-white/80 font-black">.env.local</span> to activate direct client-side routing.
-                    </p>
-                    <div className="bg-black/40 rounded-lg p-3 font-mono text-[9px] text-green-400 leading-relaxed">
-                      <span className="text-white/30"># .env.local</span><br />
-                      STRIPE_SECRET_KEY=<span className="text-pit-yellow">sk_test_...</span><br />
-                      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<span className="text-pit-yellow">pk_test_...</span>
-                    </div>
-                  </motion.div>
-                )}
 
                 {error && (
                   <div className="glass border-racing-red/30 bg-racing-red/10 rounded-xl p-4 text-[10px] text-racing-red font-orbitron">
@@ -926,28 +1135,14 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleStripeCheckout}
-                  disabled={loading}
-                  className="w-full btn-racing flex items-center justify-center gap-3 py-4 text-[11px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                      />
-                      ROUTING TO STRIPE GATEWAY...
-                    </>
-                  ) : (
-                    <>
-                      <Lock size={14} />
-                      REDIRECT TO STRIPE SECURE PAGE
-                      <ArrowRight size={14} />
-                    </>
-                  )}
-                </button>
+                <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test", currency: "EUR", intent: "capture" }}>
+                    <PayPalButtons 
+                        style={{ layout: "vertical", color: "black", shape: "rect", label: "pay" }} 
+                        createOrder={createPayPalOrder}
+                        onApprove={onPayPalApprove}
+                        onError={() => setError("PayPal encountered an error. Please try again.")}
+                    />
+                </PayPalScriptProvider>
               </motion.div>
             )}
 

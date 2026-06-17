@@ -5,14 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle, Flag, Coffee, Zap, Clock,
   ArrowRight, ChevronRight, Bell, Trophy,
-  Printer, Download, Cpu, MapPin, Truck, Compass, Phone, Mail, User
+  Printer, Download, Cpu, MapPin, Truck, Compass, Phone, Mail, User,
+  Package, ExternalLink, Shirt
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCart } from '@/context/CartContext';
-import { useSound } from '@/context/SoundContext';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { useCart } from '@/frontend/context/CartContext';
+import { useSound } from '@/frontend/context/SoundContext';
+import { useAuth } from '@/frontend/context/AuthContext';
+import { supabase } from '@/shared/lib/supabase';
+import FiveRedLightsGame from '@/frontend/components/FiveRedLightsGame';
 
 // ─── Order Status Machine Helpers ──────────────────────────────────────────────
 const getStages = (method: 'counter' | 'trackside' | 'drone') => {
@@ -183,6 +185,7 @@ type OrderData = {
   id: string;
   ref: string;
   subtotal?: number;
+  bundleDiscount?: number;
   vat?: number;
   shippingCost?: number;
   total: number;
@@ -195,6 +198,14 @@ type OrderData = {
   shippingCity?: string;
   shippingPostcode?: string;
   shippingCountry?: string;
+  isB2B?: boolean;
+  billingName?: string;
+  billingCui?: string;
+  billingAddress?: string;
+  billingCity?: string;
+  billingPostcode?: string;
+  billingCountry?: string;
+  invoice_number?: string;
   items: OrderItem[];
   created: number;
   isDemo?: boolean;
@@ -493,8 +504,9 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const { clearCart } = useCart();
-  const { playSound } = useSound();
+  const { playSound, playRadioMessage } = useSound();
   const { user } = useAuth();
+
 
   const [cleared, setCleared] = useState(false);
   const [order, setOrder] = useState<OrderData | null>(null);
@@ -509,6 +521,119 @@ function SuccessContent() {
   const [printLogs, setPrintLogs] = useState<string[]>([]);
   const [printing, setPrinting] = useState(false);
   const [printed, setPrinted] = useState(false);
+
+  // Printful fulfillment tracking
+  const [fulfillmentData, setFulfillmentData] = useState<{
+    fulfillmentStatus: string;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+    printfulConfigured: boolean;
+    liveData: any;
+  } | null>(null);
+
+  // Brewing Telemetry States
+  const [brewProgress, setBrewProgress] = useState(0);
+  const [brewPressure, setBrewPressure] = useState(0);
+  const [brewFlow, setBrewFlow] = useState(0);
+  const [brewYield, setBrewYield] = useState(0);
+  const [brewLogs, setBrewLogs] = useState<string[]>([]);
+  const [brewActive, setBrewActive] = useState(false);
+  const [pressureHistory, setPressureHistory] = useState<number[]>([]);
+  const [yieldHistory, setYieldHistory] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!order) return;
+    
+    // Play F1 Race Engineer radio order confirmation
+    try {
+      const itemsText = order.items && order.items.length > 0 
+        ? order.items.map((item: any) => `${item.quantity} ${item.name || item.product_name || 'item'}`).join(', ')
+        : 'coffee fuel';
+      playRadioMessage(`Box Box. Order confirmed for ${itemsText}. Starting espresso calibration telemetry. Push now!`);
+    } catch (e) {
+      console.warn('Radio playback failed:', e);
+    }
+    
+    setBrewActive(true);
+
+    setBrewProgress(0);
+    setBrewPressure(0);
+    setBrewFlow(0);
+    setBrewYield(0);
+    setBrewLogs(['[SYS] Calibration initialized...', '[SYS] Pre-infusion cycle starting...']);
+    setPressureHistory([]);
+    setYieldHistory([]);
+    
+    const intervalTime = 500; 
+    const totalSteps = 60; 
+    let currentStep = 0;
+    
+    const timer = setInterval(() => {
+      currentStep++;
+      const progressPercent = Math.min(100, Math.round((currentStep / totalSteps) * 100));
+      setBrewProgress(progressPercent);
+      
+      let currentP = 0;
+      let currentF = 0;
+      let currentY = 0;
+      let newLog = '';
+      
+      if (currentStep <= 10) {
+        currentP = 1.5 + (currentStep / 10) * 1.5; 
+        currentF = 0.5 + (currentStep / 10) * 0.5; 
+        currentY = currentStep * 0.2; 
+        if (currentStep === 1) newLog = '[SYS] Pre-infusion: 2.0 Bar active. Saturating puck...';
+        if (currentStep === 5) newLog = '[SYS] Puck resistance detected. Calibrating flow...';
+      } else if (currentStep <= 20) {
+        const factor = (currentStep - 10) / 10;
+        currentP = 3.0 + factor * 6.2; 
+        currentF = 1.0 + factor * 1.8; 
+        currentY = 2.0 + (currentStep - 10) * 1.2;
+        if (currentStep === 11) newLog = '[SYS] Ramping to full extraction pressure (9.2 Bar)...';
+        if (currentStep === 16) newLog = '[SYS] Maximum grouphead pressure stabilized.';
+      } else if (currentStep <= 50) {
+        const decay = (currentStep - 20) / 30;
+        currentP = 9.2 - decay * 1.2; 
+        currentF = 2.8 - decay * 0.4; 
+        currentY = 14.0 + (currentStep - 20) * 0.8; 
+        if (currentStep === 21) newLog = '[SYS] Main extraction active. TDS target: 11.2%.';
+        if (currentStep === 35) newLog = '[SYS] Blonding point threshold monitored.';
+      } else {
+        const factor = (currentStep - 50) / 10;
+        currentP = 8.0 - factor * 8.0; 
+        currentF = 2.4 - factor * 2.4; 
+        currentY = 38.0 + factor * 2.0; 
+        if (currentStep === 51) newLog = '[SYS] Extraction complete. Solenoid pressure release active.';
+        if (currentStep === 58) newLog = '[SYS] CALIBRATION SUCCESSFUL: TDS 11.8%, extraction yield 21.2%.';
+      }
+      
+      setBrewPressure(parseFloat(currentP.toFixed(1)));
+      setBrewFlow(parseFloat(currentF.toFixed(1)));
+      setBrewYield(parseFloat(currentY.toFixed(1)));
+      
+      setPressureHistory(prev => [...prev.slice(-19), currentP]);
+      setYieldHistory(prev => [...prev.slice(-19), currentY]);
+      
+      if (newLog) {
+        setBrewLogs(prev => [...prev, newLog]);
+      }
+      
+      if (currentStep >= totalSteps) {
+        clearInterval(timer);
+        setBrewActive(false);
+      }
+    }, intervalTime);
+    
+    return () => clearInterval(timer);
+  }, [order]);
+
+  const pressurePath = pressureHistory.length > 0 
+    ? 'M ' + pressureHistory.map((val, idx) => `${(idx / 19) * 100} ${100 - (val / 10) * 100}`).join(' L ')
+    : 'M 0 100';
+
+  const yieldPath = yieldHistory.length > 0
+    ? 'M ' + yieldHistory.map((val, idx) => `${(idx / 19) * 100} ${100 - (val / 40) * 100}`).join(' L ')
+    : 'M 0 100';
 
   // Map order storage fields
   const mappedOrder: OrderData | null = order ? {
@@ -528,13 +653,23 @@ function SuccessContent() {
     shippingCountry: order.shippingCountry || 'Italy',
     shippingCost: order.shippingCost ?? 0.00,
     vat: order.vat ?? (order.total * 0.08),
+    bundleDiscount: order.bundleDiscount ?? 0.00,
     subtotal: order.subtotal ?? (order.total - (order.vat ?? (order.total * 0.08)) - (order.shippingCost ?? 0.00)),
+    isB2B: order.isB2B ?? false,
+    billingName: order.billingName || order.customerName || '',
+    billingCui: order.billingCui || '',
+    billingAddress: order.billingAddress || order.shippingAddress || '',
+    billingCity: order.billingCity || order.shippingCity || '',
+    billingPostcode: order.billingPostcode || order.shippingPostcode || '',
+    billingCountry: order.billingCountry || order.shippingCountry || '',
+    invoice_number: order.invoice_number || '',
     isDemo: order.isDemo || false
   } : null;
 
   const subtotalVal = mappedOrder?.subtotal ?? 0;
   const vatVal = mappedOrder?.vat ?? 0;
   const shippingCostVal = mappedOrder?.shippingCost ?? 0;
+  const bundleDiscountVal = mappedOrder?.bundleDiscount ?? 0;
 
   const [stagesList, setStagesList] = useState<any[]>(getStages('counter'));
 
@@ -680,6 +815,33 @@ function SuccessContent() {
       .catch(() => setFetchError(true));
   }, [sessionId]);
 
+  // Poll Printful fulfillment status for real Stripe orders
+  useEffect(() => {
+    if (!order || !order.id || order.isDemo) return;
+
+    // Only poll if the order has merchandise
+    const hasMerch = order.items?.some((i: any) =>
+      i.product_category === 'Merchandise' || i.product_name?.match(
+        /T-Shirt|Hoodie|Cap|Gloves|Lanyard|Backpack|Bottle|Cup|Keychain/i
+      )
+    );
+    if (!hasMerch) return;
+
+    const poll = () => {
+      fetch(`/api/fulfillment/${order.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.error) setFulfillmentData(data);
+        })
+        .catch(() => {});
+    };
+
+    poll();
+    // Poll every 30 seconds for live tracking updates
+    const interval = setInterval(poll, 30_000);
+    return () => clearInterval(interval);
+  }, [order?.id]);
+
   // Setup dynamic stage progression
   useEffect(() => {
     if (!mappedOrder) return;
@@ -696,6 +858,26 @@ function SuccessContent() {
     );
     return () => timers.forEach(clearTimeout);
   }, [order]);
+
+  // Trigger radio sound when final stage is reached
+  useEffect(() => {
+    if (!order) return;
+    if (currentStage === 0) return;
+
+    const method = order.fulfillmentMethod || 'counter';
+    const activeStages = getStages(method);
+    const stage = activeStages[currentStage];
+    if (!stage) return;
+
+    if (stage.id === 'delivered' || stage.id === 'ready') {
+      const msg = method === 'drone'
+        ? "Payload dropped on the telemetry pad. Enjoy your fuel!"
+        : method === 'trackside'
+        ? "Freight container delivered to team garage. Enjoy your fuel!"
+        : "Order complete. Your coffee fuel is ready at the counter.";
+      playRadioMessage(msg);
+    }
+  }, [currentStage, order?.id, order?.fulfillmentMethod, playRadioMessage]);
 
   const isReady = currentStage === stagesList.length - 1;
 
@@ -957,11 +1139,131 @@ function SuccessContent() {
               </motion.div>
             )}
 
+            {/* Live Brewing Telemetry Simulator Card */}
+            {mappedOrder && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+                className="glass border-white/5 rounded-2xl p-6 space-y-6 relative overflow-hidden bg-white/2"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-racing-red/3 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Coffee size={14} className="text-racing-red animate-pulse" />
+                    <h3 className="font-orbitron text-[9px] font-black tracking-[0.3em] text-white/30 uppercase">
+                      LIVE BREWING CALIBRATION SIMULATOR
+                    </h3>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-orbitron font-black uppercase tracking-widest border ${
+                    brewActive 
+                      ? 'bg-racing-red/10 border-racing-red/20 text-racing-red animate-pulse' 
+                      : 'bg-green-500/10 border-green-500/20 text-green-400'
+                  }`}>
+                    {brewActive ? 'EXTRACTION ACTIVE' : 'CALIBRATION COMPLETED'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Gauge 1: Pressure */}
+                  <div className="bg-white/2 border border-white/5 rounded-xl p-4 font-mono flex flex-col justify-between items-center text-center">
+                    <span className="text-[8px] text-white/30 uppercase tracking-widest">BAR PRESSURE</span>
+                    <span className="text-2xl font-black text-white font-orbitron my-2">{brewPressure} <span className="text-[10px] text-white/40">BAR</span></span>
+                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                      <div className="h-full bg-racing-red transition-all duration-300" style={{ width: `${(brewPressure / 10) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Gauge 2: Flow Rate */}
+                  <div className="bg-white/2 border border-white/5 rounded-xl p-4 font-mono flex flex-col justify-between items-center text-center">
+                    <span className="text-[8px] text-white/30 uppercase tracking-widest">FLOW RATE</span>
+                    <span className="text-2xl font-black text-white font-orbitron my-2">{brewFlow} <span className="text-[10px] text-white/40">ML/S</span></span>
+                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                      <div className="h-full bg-pit-yellow transition-all duration-300" style={{ width: `${(brewFlow / 3.5) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Gauge 3: Yield Weight */}
+                  <div className="bg-white/2 border border-white/5 rounded-xl p-4 font-mono flex flex-col justify-between items-center text-center">
+                    <span className="text-[8px] text-white/30 uppercase tracking-widest">EXTRACTION YIELD</span>
+                    <span className="text-2xl font-black text-white font-orbitron my-2">{brewYield} <span className="text-[10px] text-white/40">GRAMS</span></span>
+                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${(brewYield / 40) * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SVG Real-time Graph */}
+                <div className="h-44 w-full bg-black/40 rounded-xl border border-white/5 p-4 relative flex items-center justify-center">
+                  <div className="absolute inset-0 grid grid-cols-5 grid-rows-4 p-4 pointer-events-none opacity-[0.03]">
+                    {Array.from({ length: 20 }).map((_, i) => (
+                      <div key={i} className="border-t border-l border-white" />
+                    ))}
+                  </div>
+
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={pressurePath}
+                      fill="none"
+                      stroke="#E10600"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      className="transition-all duration-300"
+                    />
+
+                    <path
+                      d={yieldPath}
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      className="transition-all duration-300"
+                    />
+                  </svg>
+                  
+                  <div className="absolute left-2 top-2 bottom-2 flex flex-col justify-between text-[6.5px] font-mono text-white/20 select-none">
+                    <span>10 BAR / 40g</span>
+                    <span>5.0 BAR / 20g</span>
+                    <span>0.0 BAR / 0g</span>
+                  </div>
+                  <div className="absolute bottom-2 left-6 right-2 flex justify-between text-[6.5px] font-mono text-white/20 select-none">
+                    <span>0s</span>
+                    <span>10s</span>
+                    <span>20s</span>
+                    <span>30s</span>
+                  </div>
+                </div>
+
+                {/* Simulated CLI Terminal Logger */}
+                <div className="bg-black/60 border border-white/5 rounded-xl p-4 font-mono text-[8.5px] text-green-400 text-left h-24 overflow-y-auto space-y-1">
+                  {brewLogs.map((log, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <span className="text-white/10 select-none">[{idx.toString().padStart(2, '0')}]</span>
+                      <span>{log}</span>
+                    </div>
+                  ))}
+                  {brewActive && (
+                    <div className="flex gap-2">
+                      <span className="text-white/10 select-none">[{brewLogs.length.toString().padStart(2, '0')}]</span>
+                      <motion.span
+                        animate={{ opacity: [1, 0, 1] }}
+                        transition={{ duration: 0.8, repeat: Infinity }}
+                        className="w-1 h-3 bg-green-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+              </motion.div>
+            )}
+
           </div>
 
           {/* ── Right Column (Invoice, Thermal Printer) ── */}
           <div className="lg:col-span-2 space-y-6">
             
+
             {/* Commercial Invoice Card */}
             {mappedOrder ? (
               <motion.div
@@ -984,7 +1286,7 @@ function SuccessContent() {
                     <span className="inline-block bg-green-500/10 border border-green-500/30 rounded-full px-2 py-0.5 font-orbitron text-[7px] font-black text-green-400 tracking-wider">
                       PAID ✓
                     </span>
-                    <p className="font-mono text-[7px] text-white/20 mt-1">#IP-{mappedOrder.ref}</p>
+                    <p className="font-mono text-[7px] text-white/20 mt-1">{mappedOrder.invoice_number || `#IP-${mappedOrder.ref}`}</p>
                   </div>
                 </div>
 
@@ -995,6 +1297,16 @@ function SuccessContent() {
                     <div className="font-black text-white truncate flex items-center gap-1"><User size={8} className="text-racing-red" /> {mappedOrder.customerName}</div>
                     <div className="text-white/60 font-mono flex items-center gap-1"><Mail size={8} className="text-white/40" /> {mappedOrder.customerEmail}</div>
                     <div className="text-white/60 font-mono flex items-center gap-1"><Phone size={8} className="text-white/40" /> {mappedOrder.customerPhone}</div>
+                    {mappedOrder.isB2B && (
+                      <div className="mt-2 pt-2 border-t border-white/5 space-y-0.5 text-left">
+                        <span className="text-white/30 text-[6.5px] tracking-wider block uppercase">BILL TO COMPANY</span>
+                        <div className="font-black text-white truncate">{mappedOrder.billingName}</div>
+                        <div className="text-white/70 font-mono text-[7.5px]">CUI: {mappedOrder.billingCui}</div>
+                        <div className="text-white/50 text-[7px] leading-tight">
+                          {mappedOrder.billingAddress}, {mappedOrder.billingCity}, {mappedOrder.billingPostcode}, {mappedOrder.billingCountry}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1 pl-2">
                     <span className="text-white/30 text-[7px] tracking-wider block uppercase">DELIVERY COORDS</span>
@@ -1037,8 +1349,14 @@ function SuccessContent() {
                     <span>ITEMS SUBTOTAL</span>
                     <span>€{subtotalVal.toFixed(2)}</span>
                   </div>
+                  {bundleDiscountVal > 0 && (
+                    <div className="flex justify-between text-racing-red">
+                      <span>PIT STOP BUNDLE (10% OFF)</span>
+                      <span>-€{bundleDiscountVal.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-white/40">
-                    <span>8% VAT TAX</span>
+                    <span>VAT TAX</span>
                     <span>€{vatVal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-white/40">
@@ -1056,16 +1374,16 @@ function SuccessContent() {
 
                 {/* Actions inside Invoice Card */}
                 <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
-                  <button
-                    onClick={() => {
-                      playSound('click');
-                      window.print();
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-orbitron text-[8px] font-bold tracking-widest cursor-pointer transition-all uppercase"
+                  <a
+                    href={`/checkout/invoice/${mappedOrder.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => playSound('click')}
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-orbitron text-[8px] font-bold tracking-widest cursor-pointer transition-all uppercase no-underline"
                   >
                     <Download size={10} />
                     PDF Invoice
-                  </button>
+                  </a>
                   <button
                     onClick={handlePrintTicket}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border font-orbitron text-[8px] font-bold tracking-widest cursor-pointer transition-all uppercase ${
@@ -1081,7 +1399,7 @@ function SuccessContent() {
               </motion.div>
             ) : fetchError ? (
               <div className="glass border-white/5 rounded-2xl p-6 text-center text-white/30 font-orbitron text-[9px] tracking-widest">
-                COULD NOT SPOOL INVOICE DATA.
+                NO ACTIVE INVOICE FOUND
               </div>
             ) : (
               <div className="glass border-white/5 rounded-2xl p-6 space-y-4 animate-pulse">
@@ -1089,6 +1407,107 @@ function SuccessContent() {
                 <div className="h-10 bg-white/5 rounded" />
                 <div className="h-20 bg-white/5 rounded" />
               </div>
+            )}
+
+            {/* ── Printful Fulfillment Tracking Panel ── */}
+            {fulfillmentData && mappedOrder && fulfillmentData.fulfillmentStatus !== 'not_required' && (
+              <motion.div
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+                className="glass border-white/5 rounded-2xl p-5 bg-white/3 space-y-4 relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pit-yellow/40 to-transparent" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shirt size={14} className="text-pit-yellow" />
+                    <h3 className="font-orbitron text-[9px] font-black tracking-[0.3em] text-white/40 uppercase">
+                      PRINTFUL FULFILLMENT
+                    </h3>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full font-orbitron text-[7px] font-black tracking-widest uppercase border ${
+                    fulfillmentData.fulfillmentStatus === 'shipped' || fulfillmentData.fulfillmentStatus === 'fulfilled'
+                      ? 'border-green-500/40 text-green-400 bg-green-500/10'
+                      : fulfillmentData.fulfillmentStatus === 'inprocess'
+                      ? 'border-pit-yellow/40 text-pit-yellow bg-pit-yellow/10 animate-pulse'
+                      : fulfillmentData.fulfillmentStatus === 'sandbox'
+                      ? 'border-white/20 text-white/40 bg-white/5'
+                      : fulfillmentData.fulfillmentStatus === 'fulfillment_error'
+                      ? 'border-racing-red/40 text-racing-red bg-racing-red/10'
+                      : 'border-white/10 text-white/30 bg-white/3'
+                  }`}>
+                    {fulfillmentData.fulfillmentStatus === 'sandbox' ? 'SANDBOX MODE' : fulfillmentData.fulfillmentStatus.toUpperCase().replace('_', ' ')}
+                  </span>
+                </div>
+
+                {/* Step indicators */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Payment', status: 'done', icon: CheckCircle },
+                    { label: 'Printing', status: ['inprocess', 'fulfilled', 'shipped'].includes(fulfillmentData.fulfillmentStatus) ? 'done' : ['draft', 'pending'].includes(fulfillmentData.fulfillmentStatus) ? 'active' : fulfillmentData.fulfillmentStatus === 'sandbox' ? 'sandbox' : 'pending', icon: Printer },
+                    { label: 'Shipped', status: ['fulfilled', 'shipped'].includes(fulfillmentData.fulfillmentStatus) ? 'done' : fulfillmentData.fulfillmentStatus === 'inprocess' ? 'active' : 'pending', icon: Package },
+                    { label: 'Delivered', status: fulfillmentData.fulfillmentStatus === 'shipped' ? 'active' : 'pending', icon: Flag },
+                  ].map((step, idx) => {
+                    const Icon = step.icon;
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-1.5 text-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
+                          step.status === 'done' ? 'bg-green-500/20 border-green-500/50 shadow-[0_0_12px_rgba(34,197,94,0.2)]' :
+                          step.status === 'active' ? 'bg-pit-yellow/20 border-pit-yellow/50' :
+                          step.status === 'sandbox' ? 'bg-white/5 border-white/10' :
+                          'bg-white/3 border-white/5'
+                        }`}>
+                          <Icon size={12} className={`${
+                            step.status === 'done' ? 'text-green-400' :
+                            step.status === 'active' ? 'text-pit-yellow' :
+                            'text-white/20'
+                          }`} />
+                        </div>
+                        <span className={`font-orbitron text-[6.5px] font-black tracking-widest uppercase ${
+                          step.status === 'done' ? 'text-green-400' :
+                          step.status === 'active' ? 'text-pit-yellow' :
+                          'text-white/20'
+                        }`}>{step.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Sandbox notice */}
+                {fulfillmentData.fulfillmentStatus === 'sandbox' && (
+                  <div className="p-3 bg-white/3 border border-white/8 rounded-xl text-[8px] font-orbitron text-white/40 tracking-wide leading-relaxed">
+                    ⚙ SANDBOX MODE — Printful API key not configured yet. Your order is saved.
+                    Add <span className="text-white/60">PRINTFUL_API_KEY</span> to .env.local and set up product variant IDs to enable live fulfillment.
+                  </div>
+                )}
+
+                {/* Tracking number */}
+                {fulfillmentData.trackingNumber && (
+                  <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-xl space-y-1">
+                    <span className="font-orbitron text-[7px] text-white/30 tracking-widest uppercase block">TRACKING NUMBER</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-green-400">
+                        {fulfillmentData.trackingNumber}
+                      </span>
+                      {fulfillmentData.trackingUrl && (
+                        <a
+                          href={fulfillmentData.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[7px] font-orbitron text-green-400/70 hover:text-green-400 transition-colors border border-green-500/20 hover:border-green-500/40 px-1.5 py-0.5 rounded"
+                        >
+                          TRACK <ExternalLink size={8} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <p className="font-orbitron text-[7px] text-white/20 tracking-widest text-right">
+                  Fulfilled by Printful · Updates every 30s
+                </p>
+              </motion.div>
             )}
 
             {/* Thermal Ticket Printer Simulation */}
@@ -1176,6 +1595,12 @@ function SuccessContent() {
                             <span>SUBTOTAL:</span>
                             <span>€{subtotalVal.toFixed(2)}</span>
                           </div>
+                          {bundleDiscountVal > 0 && (
+                            <div className="flex justify-between text-black font-bold">
+                              <span>PIT STOP BUNDLE:</span>
+                              <span>-€{bundleDiscountVal.toFixed(2)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span>VAT (8%):</span>
                             <span>€{vatVal.toFixed(2)}</span>

@@ -6,8 +6,8 @@ import {
   ShoppingBag, CheckCircle, Clock, ChevronRight, 
   Search, X, Printer, Bell, ShieldCheck, DollarSign, AlertCircle 
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { useSound } from '@/context/SoundContext';
+import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { useSound } from '@/frontend/context/SoundContext';
 
 type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 

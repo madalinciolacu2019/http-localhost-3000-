@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { LayoutDashboard, ShoppingBag, Users, Coffee, Settings } from 'lucide-react';
+import { AdminGuard } from '@/frontend/components/AdminGuard';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,7 +40,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto h-[calc(100vh-6rem)]">
-        {children}
+        <AdminGuard>
+          {children}
+        </AdminGuard>
       </main>
     </div>
   );

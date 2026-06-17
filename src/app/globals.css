@@ -1,63 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #15151E;
+  --background: #050508;
   --foreground: #FFFFFF;
   --color-racing-red: #E10600;
-  --color-carbon-black: #15151E;
-  --color-asphalt: #38383F;
+  --color-carbon-black: #0A0A0F;
+  --color-asphalt: #1E1E24;
   --color-pit-yellow: #FFD700;
 
-  /* Ecosystem variables */
+  /* Premium Ecosystem Variables */
   --accent-red: #E10600;
   --text-muted: rgba(255, 255, 255, 0.45);
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
   --radius-full: 9999px;
-  --surface-light: rgba(255, 255, 255, 0.05);
-  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --ecosystem-header-height: 52px;
+  --surface-light: rgba(255, 255, 255, 0.02);
+  --transition-fast: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  --ecosystem-header-height: 64px;
   
   --font-orbitron: var(--font-orbitron);
   --font-geist-sans: var(--font-geist-sans);
   --font-geist-mono: var(--font-geist-mono);
 
-  --animate-telemetry: telemetry 2s linear infinite;
-}
+  --animate-telemetry: telemetry 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 
-@media (max-width: 768px) {
-  :root {
-    --ecosystem-header-height: 82px;
-  }
-}
-
-.ecosystem-header {
-  background: rgba(7, 8, 10, 0.85);
-  backdrop-filter: blur(12px) saturate(180%);
-  padding: 12px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  font-size: 0.8rem;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (max-width: 768px) {
-  .ecosystem-header {
-    padding: 8px 16px;
-    font-size: 0.7rem;
-    gap: 8px;
-  }
+  /* Hyper-Premium Glassmorphism */
+  --glass-bg: rgba(10, 10, 15, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-red-bg: rgba(225, 6, 0, 0.03);
+  --glass-red-border: rgba(225, 6, 0, 0.15);
 }
 
 @keyframes telemetry {
-  0% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
-  100% { opacity: 0.3; transform: scale(1); }
+  0% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.02); }
+  100% { opacity: 0.2; transform: scale(1); }
 }
 
 body {
@@ -65,64 +42,83 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, .racing-font {
   font-family: var(--font-orbitron), sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
 }
 
-/* Glassmorphism */
+/* Hyper-Premium Glass */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 }
 
-.glass-red {
-  background: rgba(225, 6, 0, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(225, 6, 0, 0.2);
+.glass:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.6), 0 0 20px rgba(225, 6, 0, 0.1);
+  transform: translateY(-4px);
+  transition: var(--transition-slow);
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #15151E;
-}
-::-webkit-scrollbar-thumb {
-  background: #E10600;
-  border-radius: 10px;
-}
-
-/* UI Utilities */
+/* Premium Buttons */
 .btn-racing {
   position: relative;
-  padding: 0.75rem 2rem;
-  background-color: var(--color-racing-red);
+  padding: 1rem 2.5rem;
+  background: transparent;
   color: white;
   font-family: var(--font-orbitron), sans-serif;
-  font-weight: 700;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.3s ease;
-  display: inline-block;
+  letter-spacing: 0.15em;
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+  border: 1px solid rgba(225, 6, 0, 0.5);
+  overflow: hidden;
+  clip-path: polygon(15px 0, 100% 0, calc(100% - 15px) 100%, 0 100%);
+}
+
+.btn-racing::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(225, 6, 0, 0.4), transparent);
+  transition: all 0.5s ease;
+}
+
+.btn-racing:hover::before {
+  left: 100%;
 }
 
 .btn-racing:hover {
-  background-color: white;
-  color: var(--color-racing-red);
-  transform: scale(1.05);
-  box-shadow: 0 0 20px rgba(225, 6, 0, 0.5);
+  background: var(--color-racing-red);
+  color: white;
+  box-shadow: 0 0 30px rgba(225, 6, 0, 0.4);
+  transform: scale(1.02);
 }
 
-.text-glow-red {
-  text-shadow: 0 0 10px rgba(225, 6, 0, 0.8);
+/* Smooth Text Gradients */
+.text-gradient {
+  background: linear-gradient(to right, #FFFFFF, rgba(255, 255, 255, 0.5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-red {
+  background: linear-gradient(135deg, #FF3333 0%, #B90500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Fix CSS Warnings by overriding Tailwind preflight and adding standard properties */
@@ -132,14 +128,36 @@ h1, h2, h3, h4, .racing-font {
   }
 }
 
-@layer utilities {
-  .line-clamp-1 { line-clamp: 1; }
-  .line-clamp-2 { line-clamp: 2; }
-  .line-clamp-3 { line-clamp: 3; }
-  .line-clamp-4 { line-clamp: 4; }
-  .line-clamp-5 { line-clamp: 5; }
-  .line-clamp-6 { line-clamp: 6; }
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
 }
+::-webkit-scrollbar-track {
+  background: #050508;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #E10600;
+}
+
+/* Glitch */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(-1px, -1px); }
+  60% { transform: translate(1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  100% { transform: translate(0); }
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+  color: var(--color-racing-red);
+}
+
 /* Loading Screen Animations - JS-Independent */
 .apex-loader-main {
   animation: fadeOutLoader 0.8s ease-in-out forwards;

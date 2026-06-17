@@ -20,10 +20,18 @@ const orbitron = Orbitron({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://apexbrews.com'),
-  title: "APEX BREWS | Precision-Engineered F1 Coffee Experience",
-  description: "Experience the world's most high-performance coffee. Telemetry-driven brewing, F1 Race Academy, and paddock-inspired aesthetics.",
-  keywords: ["F1 coffee", "Apex Brews", "Race Academy", "Formula 1 cafe", "specialty coffee"],
+  title: "APEX BREWS | Precision-Engineered Motorsport Coffee",
+  description: "Experience the world's most advanced coffee roastery. Telemetry-driven, precision-roasted beans for maximum performance.",
+  keywords: ["motorsport coffee", "Apex Brews", "specialty coffee", "racing coffee", "telemetry roasting"],
   authors: [{ name: "Apex Brews Team" }],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ApexBrews",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: "APEX BREWS | The Paddock Experience",
     description: "Brewed for speed. Engineered for champions.",
@@ -34,26 +42,37 @@ export const metadata: Metadata = {
         url: "/og-preview.png",
         width: 1200,
         height: 630,
-        alt: "Apex Brews F1 Experience",
+        alt: "Apex Brews Racing Experience",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "APEX BREWS F1 Experience",
-    description: "Precision in every drop. Join the Race Academy.",
+    title: "APEX BREWS Racing Experience",
+    description: "Precision in every drop. Join the Racing Experience.",
     images: ["/og-preview.png"],
   },
 };
 
-import { Providers } from "@/components/Providers";
-import Navbar from "@/components/Navbar";
-import LoadingScreen from "@/components/LoadingScreen";
-import CookieBanner from "@/components/CookieBanner";
-import Footer from "@/components/Footer";
-import TracksideSoundController from "@/components/TracksideSoundController";
-import EcosystemHeader from "@/components/EcosystemHeader";
-import { CursorGlow } from "@/components/CursorGlow";
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+import { Providers } from "@/frontend/components/Providers";
+import Navbar from "@/frontend/components/Navbar";
+import LoadingScreen from "@/frontend/components/LoadingScreen";
+import CookieBanner from "@/frontend/components/CookieBanner";
+import DemoWarningBanner from "@/frontend/components/DemoWarningBanner";
+import Footer from "@/frontend/components/Footer";
+import F1Loader from "@/frontend/components/F1Loader";
+
+import EcosystemHeader from "@/frontend/components/EcosystemHeader";
+import { CursorGlow } from "@/frontend/components/CursorGlow";
+import LiveTimingTower from "@/frontend/components/LiveTimingTower";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 export default function RootLayout({
   children,
@@ -67,18 +86,22 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-carbon-black text-white font-sans overflow-x-hidden">
+        <F1Loader />
         <Providers>
           <LoadingScreen />
           <EcosystemHeader />
           <Navbar />
           <CursorGlow />
+          <LiveTimingTower />
           <div className="flex-1">
             {children}
           </div>
           {/* Site-wide persistent audio layer controller module */}
-          <TracksideSoundController />
+
           <Footer />
           <CookieBanner />
+          <DemoWarningBanner />
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />
         </Providers>
       </body>
     </html>
