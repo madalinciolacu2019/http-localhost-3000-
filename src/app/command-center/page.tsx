@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, Activity, Users, DollarSign, Power, AlertTriangle, Server, Terminal as TerminalIcon, Package, Zap, Sliders, FlaskConical, TrendingUp, Unlock } from 'lucide-react';
 import { CeoGuard } from '@/frontend/components/CeoGuard';
-import { useGlobalEvent } from '@/frontend/context/GlobalEventContext';
 import { useAuth } from '@/frontend/context/AuthContext';
 import Navbar from '@/frontend/components/Navbar';
 import { useDatabase } from '@/frontend/context/DatabaseContext';
@@ -13,7 +12,6 @@ import { useSound } from '@/frontend/context/SoundContext';
 export default function CommandCenterPage() {
   const { user } = useAuth();
   const { playSound } = useSound();
-  const { isOverheat, toggleOverheat } = useGlobalEvent();
   const { stats, addRevenue, spendRevenue, boostTraffic, products, updateProductPrice, unlockProduct } = useDatabase();
   
   // Fake telemetry state
@@ -326,34 +324,6 @@ export default function CommandCenterPage() {
                 </div>
               </div>
 
-              {/* Big Red Switch */}
-              <div className="glass bg-black/50 border border-white/10 rounded-3xl p-6 text-center relative overflow-hidden flex flex-col justify-center items-center">
-                {isOverheat && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: [0.1, 0.3, 0.1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute inset-0 bg-racing-red pointer-events-none"
-                  />
-                )}
-                
-                <AlertTriangle size={20} className={`mb-4 ${isOverheat ? 'text-racing-red animate-bounce' : 'text-white/20'}`} />
-                
-                <h2 className="font-orbitron text-sm font-black text-white uppercase tracking-widest mb-2">
-                  Defcon 1 Overheat Mode
-                </h2>
-
-                <button
-                  onClick={() => toggleOverheat(!isOverheat)}
-                  className={`relative group flex flex-col items-center justify-center transition-all duration-300 mt-4 ${isOverheat ? 'scale-95' : 'hover:scale-105'}`}
-                >
-                  <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-colors ${isOverheat ? 'border-racing-red shadow-[0_0_50px_#E10600]' : 'border-white/20 group-hover:border-racing-red/50'}`}>
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isOverheat ? 'bg-racing-red animate-pulse' : 'bg-black border border-white/20 group-hover:bg-racing-red/20'}`}>
-                      <Power size={20} className={isOverheat ? 'text-white' : 'text-white/50 group-hover:text-racing-red'} />
-                    </div>
-                  </div>
-                </button>
-              </div>
 
               {/* Incident Terminal */}
               <div className="flex-1 glass bg-black/80 border border-white/10 rounded-2xl p-4 flex flex-col relative overflow-hidden min-h-[250px]">
