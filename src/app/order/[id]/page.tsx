@@ -16,34 +16,76 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     if (!orderId) return;
 
-    const loadOrder = () => {
+    const loadOrder = async () => {
       if (orderId.startsWith('demo_')) {
         const stored = localStorage.getItem(`order_${orderId}`);
         if (stored) setOrder(JSON.parse(stored));
+        const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
+        setStatus(currentStatus);
+        setLoading(false);
       } else {
-        const allOrders = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('order_demo_')) {
-            allOrders.push(JSON.parse(localStorage.getItem(key) || '{}'));
+        try {
+          const res = await fetch(`/api/fulfillment/${orderId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('apex-brews-token') || ''}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setOrder({ 
+              id: data.orderId, 
+              status: data.status, 
+              trackingNumber: data.trackingNumber, 
+              trackingUrl: data.trackingUrl,
+              total_amount: data.totalAmount || 24.90
+            });
+            setStatus(data.status || 'pending');
+          } else {
+            // fallback
+            const stored = localStorage.getItem(`order_${orderId}`);
+            if (stored) {
+              setOrder(JSON.parse(stored));
+              const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
+              setStatus(currentStatus);
+            }
           }
+        } catch {
+          // fallback
+          const stored = localStorage.getItem(`order_${orderId}`);
+          if (stored) {
+            setOrder(JSON.parse(stored));
+            const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
+            setStatus(currentStatus);
+          }
+        } finally {
+          setLoading(false);
         }
-        const found = allOrders.find(o => o.id === orderId);
-        if (found) setOrder(found);
       }
-      
-      const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
-      setStatus(currentStatus);
-      setLoading(false);
     };
 
     loadOrder();
     
     // Poll for status changes
-    const interval = setInterval(() => {
-      const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
-      setStatus(currentStatus);
-    }, 1000);
+    const interval = setInterval(async () => {
+      if (orderId.startsWith('demo_')) {
+        const currentStatus = localStorage.getItem(`status_${orderId}`) || 'pending';
+        setStatus(currentStatus);
+      } else {
+        try {
+          const res = await fetch(`/api/fulfillment/${orderId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('apex-brews-token') || ''}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setStatus(data.status || 'pending');
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [orderId]);
@@ -71,8 +113,17 @@ export default function OrderTrackingPage() {
     { id: 'completed', title: 'CHECKERED FLAG', desc: 'Successfully delivered', icon: Flag, color: 'text-green-400' }
   ];
 
-  const currentStepIndex = steps.findIndex(s => s.id === status);
-  const safeIndex = currentStepIndex >= 0 ? currentStepIndex : 3;
+  const getMappedStatus = (rawStatus: string) => {
+    const s = (rawStatus || '').toLowerCase();
+    if (s === 'completed' || s === 'delivered' || s === 'fulfilled') return 'completed';
+    if (s === 'ready' || s === 'dispatched' || s === 'shipped' || s === 'sent') return 'ready';
+    if (s === 'preparing' || s === 'processing' || s === 'draft' || s === 'brewing') return 'preparing';
+    return 'pending';
+  };
+
+  const mappedStatus = getMappedStatus(status);
+  const currentStepIndex = steps.findIndex(s => s.id === mappedStatus);
+  const safeIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
   const progressPercent = (safeIndex / (steps.length - 1)) * 100;
 
   return (

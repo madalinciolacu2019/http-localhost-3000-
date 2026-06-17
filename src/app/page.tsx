@@ -6,6 +6,7 @@ import { LiveRaceCenter } from "@/frontend/components/LiveRaceCenter";
 import { useUI } from "@/frontend/context/UIContext";
 import { useCart } from "@/frontend/context/CartContext";
 import { useSound } from "@/frontend/context/SoundContext";
+import { useDatabase } from "@/frontend/context/DatabaseContext";
 import { products } from "@/shared/lib/products";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from '@/frontend/context/AuthContext';
@@ -26,6 +27,7 @@ export default function Home() {
   const { raceMode } = useUI();
   const { addItem, openCart } = useCart();
   const { playSound } = useSound();
+  const { setups } = useDatabase();
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePost, setActivePost] = useState<any | null>(null);
@@ -211,6 +213,79 @@ export default function Home() {
               </button>
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── SECTION 1.5: Paddock Standings (Live Telemetry) ── */}
+      <section className="py-24 px-6 relative overflow-hidden bg-[#050508] border-t border-b border-white/5">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[30vw] bg-pit-yellow/5 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <header className="mb-16 flex flex-col items-center text-center">
+            <span className="font-orbitron text-pit-yellow font-black tracking-[0.4em] text-xs uppercase mb-4 flex items-center gap-2">
+              <Trophy size={14} className="text-pit-yellow" /> Paddock Telemetry
+            </span>
+            <h2 className="font-orbitron text-3xl md:text-5xl font-black italic tracking-tighter text-white uppercase">
+              LEADERBOARD <span className="text-pit-yellow">STANDINGS</span>
+            </h2>
+            <p className="text-white/40 mt-4 font-light text-xs max-w-xl leading-relaxed">
+              Real-time telemetry setups engineered by drivers in the community. Calibrate your extraction parameters to rise in the championship standings.
+            </p>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {setups.slice(0, 3).map((setup, idx) => (
+              <motion.div
+                key={setup.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.6 }}
+                className="glass bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-pit-yellow/30 transition-all duration-300 animate-pulse-subtle"
+              >
+                <div className="absolute top-4 right-4 font-orbitron text-3xl font-black text-white/5 group-hover:text-pit-yellow/10 transition-colors">
+                  #{idx + 1}
+                </div>
+                
+                <span className="font-orbitron text-[9px] font-black text-pit-yellow tracking-[0.2em] uppercase block mb-1">
+                  {setup.author}
+                </span>
+                
+                <h3 className="font-orbitron text-lg font-black text-white uppercase tracking-tight mb-4 group-hover:text-pit-yellow transition-colors italic">
+                  {setup.name}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-black/40 border border-white/5 rounded-xl p-3">
+                    <span className="block font-mono text-[8px] text-white/30 mb-0.5">PRESSURE</span>
+                    <span className="font-orbitron text-xs font-black text-white">{setup.force.toFixed(1)} BAR</span>
+                  </div>
+                  <div className="bg-black/40 border border-white/5 rounded-xl p-3">
+                    <span className="block font-mono text-[8px] text-white/30 mb-0.5">THERMAL</span>
+                    <span className="font-orbitron text-xs font-black text-white">{setup.heat.toFixed(1)} °C</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] font-mono text-white/40 border-t border-white/5 pt-4">
+                  <span>Votes: {setup.upvotes}</span>
+                  <Link href="/leaderboard" className="text-pit-yellow hover:underline flex items-center gap-1">
+                    Vote <ChevronDown size={12} className="rotate-[-90deg]" />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/customizer">
+              <button 
+                onClick={() => playSound('click')}
+                className="px-6 py-3 bg-pit-yellow/10 hover:bg-pit-yellow hover:text-black border border-pit-yellow/30 text-pit-yellow rounded-xl font-orbitron text-[10px] font-black tracking-widest transition-all duration-300"
+              >
+                CALIBRATE YOUR CHASSIS
+              </button>
+            </Link>
+          </div>
         </div>
       </section>
 

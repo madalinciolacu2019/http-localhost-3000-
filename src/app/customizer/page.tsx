@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import Navbar from '@/frontend/components/Navbar';
 import Footer from '@/frontend/components/Footer';
 import { motion } from 'framer-motion';
-import { Hexagon, Zap, Thermometer, Save, Download, Coffee } from 'lucide-react';
+import { Hexagon, Zap, Thermometer, Save, Download, Coffee, ShoppingCart } from 'lucide-react';
 import { useSound } from '@/frontend/context/SoundContext';
 import { useAuth } from '@/frontend/context/AuthContext';
+import { useCart } from '@/frontend/context/CartContext';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the 3D component with SSR disabled
@@ -25,6 +26,7 @@ const BlendCustomizer3D = dynamic(() => import('@/frontend/components/BlendCusto
 export default function CustomizerPage() {
   const { playSound } = useSound();
   const { user, updateUserMetadata } = useAuth();
+  const { addItem, openCart } = useCart();
   
   const [force, setForce] = useState(9.0);
   const [heat, setHeat] = useState(92.0);
@@ -42,6 +44,25 @@ export default function CustomizerPage() {
     } else {
       alert('You need a Paddock Pass to save custom telemetry setups.');
     }
+  };
+
+  const handleAddToOrder = () => {
+    playSound('pit-stop');
+    const customProduct = {
+      id: -(100000 + Math.floor(Math.random() * 900000)),
+      name: setupName || 'Custom Telemetry Roast',
+      category: 'Espresso',
+      price: 24.90,
+      image: '/menu_espresso_turbo.png',
+      description: `Custom calibrated F1 blend roasted with ${force.toFixed(1)} BAR extraction pressure & ${heat.toFixed(1)}°C thermal output.`,
+      stats: {
+        intensity: `${Math.round((force - 7) * 25)}%`,
+        heat: `${heat.toFixed(0)}°C`
+      },
+      color: 'red'
+    };
+    addItem(customProduct);
+    openCart();
   };
 
   return (
@@ -113,15 +134,22 @@ export default function CustomizerPage() {
 
             <div className="pt-6 border-t border-white/10 space-y-4">
               <button 
-                onClick={handleSaveSetup}
+                onClick={handleAddToOrder}
                 className="w-full btn-racing group"
               >
                 <span className="font-orbitron text-xs font-black relative z-10 flex items-center justify-center gap-2">
-                  <Save size={14} /> SAVE TO PROFILE
+                  <ShoppingCart size={14} /> ADD TO FUEL ORDER (€24.90)
                 </span>
               </button>
+
+              <button 
+                onClick={handleSaveSetup}
+                className="w-full glass py-3 rounded border border-white/10 text-white/80 hover:text-white hover:bg-white/5 transition-all font-orbitron text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2"
+              >
+                <Save size={14} className="text-pit-yellow" /> SAVE TELEMETRY TO PROFILE
+              </button>
               
-              <button className="w-full glass py-3 rounded border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-all font-orbitron text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+              <button className="w-full glass py-3 rounded border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all font-orbitron text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2">
                 <Download size={14} /> EXPORT CAD FILE
               </button>
             </div>
