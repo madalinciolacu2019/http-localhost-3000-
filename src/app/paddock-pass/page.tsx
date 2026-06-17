@@ -356,18 +356,18 @@ export default function PaddockPassPage() {
                 
                 <div className="flex gap-4">
 
-                  {/* Pit Wall Quick Access for Staff */}
-                  {(role === 'CEO' || role === 'EMPLOYEE') && (
+                  {/* Command Center Quick Access for CEO */}
+                  {role === 'CEO' && (
                     <motion.button 
                       initial={{ opacity: 0, x: 20 }} 
                       animate={{ opacity: 1, x: 0 }}
                       onClick={() => {
                         playSound('scanner');
-                        window.location.href = '/pit-wall';
+                        window.location.href = '/command-center';
                       }}
                       className="px-6 py-2 rounded bg-racing-red text-white font-orbitron text-xs font-black tracking-widest uppercase transition-all shadow-[0_0_20px_#E10600] hover:scale-105"
                     >
-                      ENTER PIT WALL
+                      ENTER COMMAND CENTER
                     </motion.button>
                   )}
 

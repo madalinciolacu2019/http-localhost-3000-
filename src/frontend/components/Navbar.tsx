@@ -17,8 +17,6 @@ const baseNavItems = [
   { id: 'merch', label: 'Gear', href: '/merch', icon: ShoppingBag },
 ];
 
-const pitWallItem = { id: 'pit-wall', label: 'Pit Wall', href: '/pit-wall', icon: Terminal };
-
 const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
@@ -28,9 +26,6 @@ const Navbar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
 
   const navItems = [...baseNavItems];
-  if (role === 'CEO' || role === 'EMPLOYEE') {
-    navItems.push(pitWallItem);
-  }
 
   const handlePaddockClub = () => {
     playSound('engine-rev');

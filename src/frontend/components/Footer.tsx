@@ -19,7 +19,6 @@ const footerLinks = [
     category: 'Explore',
     links: [
       { label: 'Gear & Merch', href: '/merch', icon: ShoppingBag },
-      { label: 'Pit Wall', href: '/pit-wall', icon: Terminal },
       { label: 'Academy', href: '/academy', icon: Trophy },
     ],
   },

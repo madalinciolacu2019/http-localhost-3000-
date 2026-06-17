@@ -463,7 +463,7 @@ export default function AdminSettingsPage() {
             <div>
               <span className="font-orbitron text-[10px] font-bold text-white uppercase block">Dispatched order simulation</span>
               <p className="text-[9px] text-white/40 leading-relaxed mt-1">
-                Generates a live, pending F&B order instantly. Useful to verify the `/admin/orders` or `/pit-wall` ticket display system.
+                Generates a live, pending F&B order instantly. Useful to verify the `/admin/orders` ticket display system.
               </p>
             </div>
             <button 
