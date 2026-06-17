@@ -277,12 +277,12 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/customizer">
+            <Link href="/leaderboard">
               <button 
                 onClick={() => playSound('click')}
                 className="px-6 py-3 bg-pit-yellow/10 hover:bg-pit-yellow hover:text-black border border-pit-yellow/30 text-pit-yellow rounded-xl font-orbitron text-[10px] font-black tracking-widest transition-all duration-300"
               >
-                CALIBRATE YOUR CHASSIS
+                EXPLORE COMMUNITY SETUPS
               </button>
             </Link>
           </div>
