@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import { useSound } from '@/frontend/context/SoundContext';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useSound } from '@/context/SoundContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Layers, AlignLeft, Box, Hexagon, DollarSign, Activity, ToggleLeft, ToggleRight, Wind, Zap, Thermometer, Users, Sun, Moon } from 'lucide-react';
-import { useBooking } from '@/frontend/context/BookingContext';
-import BookingModal from '@/frontend/components/BookingModal';
-import TerminalModal from '@/frontend/components/TerminalModal';
+import { useBooking } from '@/context/BookingContext';
+import BookingModal from '@/components/BookingModal';
+import TerminalModal from '@/components/TerminalModal';
 import { Lock, Unlock, Key, Volume2 } from 'lucide-react';
 
 type ZoneID = 'lounge' | 'bar' | 'kitchen' | 'fast_track' | 'simulators' | 'paddock_suite';

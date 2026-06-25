@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getPrintfulOrderStatus, isPrintfulConfigured } from '@/shared/lib/printful';
-import { verifyAuth } from '@/shared/lib/auth-server';
+import { getPrintfulOrderStatus, isPrintfulConfigured } from '@/lib/printful';
+import { verifyAuth } from '@/lib/auth-server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

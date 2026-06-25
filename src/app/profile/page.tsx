@@ -6,14 +6,14 @@ import {
   User, Shield, Award, AwardIcon, History, AlertTriangle, 
   Trash2, X, Clipboard, Share2, LogOut, CheckCircle, Package, ArrowUpRight, Copy, Check, Crown, Star, SwitchCamera, BarChart, Wallet, ShieldCheck, Layers, Zap, Download
 } from 'lucide-react';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { useSound } from '@/frontend/context/SoundContext';
-import VipPaddockPass from '@/frontend/components/VipPaddockPass';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { useSound } from '@/context/SoundContext';
+import VipPaddockPass from '@/components/VipPaddockPass';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import SubscriptionManager from '@/frontend/components/SubscriptionManager';
+import SubscriptionManager from '@/components/SubscriptionManager';
 import { QRCodeSVG } from 'qrcode.react';
-import { products } from '@/shared/lib/products';
+import { products } from '@/lib/products';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Order = {

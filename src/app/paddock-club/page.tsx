@@ -8,9 +8,9 @@ import {
   Settings, LogOut, CreditCard, History, Target, Bell,
   Lock, Volume2, Cpu, Package, Clock, CheckCircle, Activity
 } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { supabase } from '@/shared/lib/supabase';
+import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { 

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCart } from '@/frontend/context/CartContext';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { useSound } from '@/context/SoundContext';
 import { 
   ArrowRight, Lock, Zap, ShoppingCart, ArrowLeft, 
   ExternalLink, AlertTriangle, FlaskConical, CreditCard,
@@ -476,6 +476,31 @@ export default function CheckoutPage() {
                     €{(totalPrice + vatBreakdown.totalVat + shippingCost).toFixed(2)}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Cross-Sell Section */}
+            <div className="glass border-white/5 rounded-xl p-5 bg-white/3 space-y-3">
+              <h3 className="font-orbitron text-[9px] font-black tracking-[0.3em] text-pit-yellow uppercase flex items-center gap-2">
+                <Coffee size={12} /> Complete Your Pit Stop
+              </h3>
+              <div className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded flex-shrink-0 flex items-center justify-center border border-white/10">
+                    <Coffee size={16} className="text-white/40" />
+                  </div>
+                  <div>
+                    <span className="block font-orbitron text-[10px] font-black text-white">V12 Dark Roast</span>
+                    <span className="block font-mono text-[8px] text-white/40">1kg Whole Bean</span>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  className="px-3 py-1.5 bg-pit-yellow/20 text-pit-yellow hover:bg-pit-yellow hover:text-black transition-colors rounded font-orbitron text-[9px] font-black uppercase cursor-pointer"
+                  onClick={() => playSound('click')}
+                >
+                  + €24.00
+                </button>
               </div>
             </div>
 

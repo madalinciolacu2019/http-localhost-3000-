@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
-import FiveRedLightsGame from '@/frontend/components/FiveRedLightsGame';
+import FiveRedLightsGame from '@/components/FiveRedLightsGame';
 
 // Must be a Server Component in Next.js — no 'use client', no hooks
 export default function NotFound() {

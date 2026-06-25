@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Hero from "@/frontend/components/Hero";
-import { LiveRaceCenter } from "@/frontend/components/LiveRaceCenter";
-import { useUI } from "@/frontend/context/UIContext";
-import { useCart } from "@/frontend/context/CartContext";
-import { useSound } from "@/frontend/context/SoundContext";
-import { products } from "@/shared/lib/products";
+import Hero from "@/components/Hero";
+import { LiveRaceCenter } from "@/components/LiveRaceCenter";
+import { useUI } from "@/context/UIContext";
+import { useCart } from "@/context/CartContext";
+import { useSound } from "@/context/SoundContext";
+import { products } from "@/lib/products";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from '@/frontend/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Card3D from '@/frontend/components/Card3D';
+import Card3D from '@/components/Card3D';
 import { 
   Trophy, Shield, Zap, Thermometer, Gauge, Cpu, 
   Check, Activity, Mail, Sparkles, Coffee, AlertTriangle, 
@@ -310,68 +310,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SECTION 4: Pitlane Dispatch Newsletter ── */}
-      <section className="py-32 px-6 relative overflow-hidden bg-gradient-to-b from-[#0A0A0F] to-[#050508] border-t border-white/5">
-        <div className="max-w-4xl mx-auto relative z-10 glass border-white/10 rounded-[2rem] p-10 md:p-16 text-center space-y-10 shadow-2xl">
-          <header className="space-y-4">
-            <span className="font-orbitron text-[10px] font-black text-racing-red tracking-[0.4em] uppercase">
-              PITLANE TELEMETRY UPLINK
-            </span>
-            <h2 className="font-orbitron text-4xl md:text-5xl font-black italic tracking-tighter text-white uppercase">
-              LINK YOUR CHASSIS
-            </h2>
-            <p className="text-white/50 text-sm max-w-xl mx-auto leading-relaxed pt-4">
-              Subscribe to the Paddock Dispatch logs. Receive firmware upgrades, telemetry roasting reports, and priority pitbox allocations directly to your console.
-            </p>
-          </header>
 
-          <form onSubmit={handleSubscribe} className="max-w-md mx-auto space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="DRIVER@APEXBREWS.COM"
-                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-6 py-4 font-mono text-sm text-white focus:outline-none focus:border-racing-red placeholder:text-white/20 transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={subStatus !== 'idle'}
-                className="btn-racing !px-8 !py-4 text-[10px] rounded-xl font-orbitron font-black tracking-widest flex items-center justify-center gap-3 cursor-pointer"
-              >
-                <Mail size={14} />
-                <span>SUBSCRIBE</span>
-              </button>
-            </div>
-
-            {subStatus !== 'idle' && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-[#050508] border border-white/10 rounded-xl p-5 font-mono text-[10px] text-green-400 text-left space-y-2 h-32 overflow-y-auto"
-              >
-                {logs.map((log, i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="text-white/20">[{i.toString().padStart(2, '0')}]</span>
-                    <span>{log}</span>
-                  </div>
-                ))}
-                {subStatus === 'linking' && (
-                  <div className="flex gap-3">
-                    <span className="text-white/20">[{logs.length}]</span>
-                    <motion.span 
-                      animate={{ opacity: [1, 0, 1] }} 
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                      className="w-2 h-4 bg-green-500"
-                    />
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </form>
-        </div>
-      </section>
 
     </main>
   );

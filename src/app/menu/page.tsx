@@ -6,16 +6,16 @@ import {
   ShoppingCart, Zap, Thermometer, CheckCircle, AlertTriangle, 
   Star, MessageSquare, X, Cpu, Sparkles, Activity 
 } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useCart } from '@/frontend/context/CartContext';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { useDatabase } from '@/frontend/context/DatabaseContext';
-import { products as baseProducts } from '@/shared/lib/products';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import type { Product } from '@/shared/lib/products';
-import SizeGuideModal from '@/frontend/components/SizeGuideModal';
-import TelemetryHUDInspector from '@/frontend/components/TelemetryHUDInspector';
-import Card3D from '@/frontend/components/Card3D';
+import { useSound } from '@/context/SoundContext';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { useDatabase } from '@/context/DatabaseContext';
+import { products as baseProducts } from '@/lib/products';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import type { Product } from '@/lib/products';
+import SizeGuideModal from '@/components/SizeGuideModal';
+import TelemetryHUDInspector from '@/components/TelemetryHUDInspector';
+import Card3D from '@/components/Card3D';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 

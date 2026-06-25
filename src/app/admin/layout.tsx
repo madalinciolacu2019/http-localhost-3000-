@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { LayoutDashboard, ShoppingBag, Users, Coffee, Settings } from 'lucide-react';
-import { AdminGuard } from '@/frontend/components/AdminGuard';
+import { AdminGuard } from '@/components/AdminGuard';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

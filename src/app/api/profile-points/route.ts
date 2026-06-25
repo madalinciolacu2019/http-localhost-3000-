@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { verifyAuth } from '@/shared/lib/auth-server';
+import { verifyAuth } from '@/lib/auth-server';
 
 export async function GET(req: Request) {
   try {

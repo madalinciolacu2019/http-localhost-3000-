@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import { useSound } from '@/frontend/context/SoundContext';
-import StravaSync from '@/frontend/components/StravaSync';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useSound } from '@/context/SoundContext';
+import StravaSync from '@/components/StravaSync';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ShieldCheck, Thermometer, Gauge, Clock, ShoppingCart, Award, Cpu, RotateCcw, AlertTriangle } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // --- TELEMETRY ORDER TYPE ---
 interface TelemetryOrder {
@@ -41,6 +41,25 @@ export default function StorefrontTelemetryPage() {
   // Simulated operations counters
   const [sessionLaps, setSessionLaps] = useState(882);
   const [revenueScore, setRevenueScore] = useState(6124.50);
+
+  // Simulated chart data
+  const [salesData, setSalesData] = useState([
+    { time: '08:00', load: 12 },
+    { time: '10:00', load: 45 },
+    { time: '12:00', load: 85 },
+    { time: '14:00', load: 60 },
+    { time: '16:00', load: 90 },
+    { time: '18:00', load: 110 }
+  ]);
+
+  const [compoundsData, setCompoundsData] = useState([
+    { name: 'V12 Dark', sales: 400 },
+    { name: 'Aero Blend', sales: 300 },
+    { name: 'Nitro Cold', sales: 550 },
+    { name: 'Apex Espresso', sales: 250 }
+  ]);
+
+  const COLORS = ['#E10600', '#F97316', '#3B82F6', '#10B981'];
 
   // Dynamic simulation loop updating order states and adding new orders
   useEffect(() => {
@@ -252,6 +271,62 @@ export default function StorefrontTelemetryPage() {
                 <span>DATA RATE: 10HZ INTERVALS</span>
               </div>
 
+            </div>
+          </div>
+
+          {/* New Charts Block */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch mt-8">
+            {/* Daily Fuel Loads Line Chart */}
+            <div className="glass rounded-3xl border border-white/10 p-6 flex flex-col justify-between bg-black/60">
+              <div>
+                <h3 className="font-orbitron text-xs font-black text-white uppercase tracking-wider mb-1">DAILY FUEL LOADS (SALES)</h3>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed mb-6">
+                  Live session traffic and sales volume over time.
+                </p>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={salesData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                    <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={9} fontFamily="monospace" />
+                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={9} fontFamily="monospace" />
+                    <Tooltip contentStyle={{ background: '#0c0d0e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 10, fontFamily: 'monospace' }} />
+                    <Line type="monotone" dataKey="load" stroke="#E10600" strokeWidth={2} dot={{ fill: '#E10600', strokeWidth: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Performing Compounds Pie Chart */}
+            <div className="glass rounded-3xl border border-white/10 p-6 flex flex-col justify-between bg-black/60">
+              <div>
+                <h3 className="font-orbitron text-xs font-black text-white uppercase tracking-wider mb-1">TOP PERFORMING COMPOUNDS</h3>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed mb-6">
+                  Breakdown of popular items by sales volume.
+                </p>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={compoundsData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="sales"
+                      stroke="none"
+                    >
+                      {compoundsData.map((entry, index) => (
+                        <Cell key={`cell-\${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: '#0c0d0e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 10, fontFamily: 'monospace' }} />
+                    <Legend wrapperStyle={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.6)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 

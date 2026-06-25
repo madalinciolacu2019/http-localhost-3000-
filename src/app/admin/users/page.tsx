@@ -6,8 +6,8 @@ import {
   Users, Crown, ShieldAlert, Award, Star, Search, 
   ChevronRight, Sparkles, Check, ArrowUpRight, Zap 
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { useSound } from '@/frontend/context/SoundContext';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useSound } from '@/context/SoundContext';
 
 type DriverProfile = {
   id: string;

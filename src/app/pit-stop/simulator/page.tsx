@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Flag, Play, RotateCcw, Cpu, Activity, Gauge, Zap, 
   Thermometer, ShieldCheck, ChevronRight, AlertTriangle, ArrowLeft, RefreshCw, Layers
 } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useSound } from '@/context/SoundContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import Link from 'next/link';
 

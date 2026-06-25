@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, ArrowLeft, Trophy, AlertOctagon, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useCart } from '@/frontend/context/CartContext';
+import { useSound } from '@/context/SoundContext';
+import { useCart } from '@/context/CartContext';
 
 type OptionCategory = 'size' | 'roast' | 'milk';
 type SelectionState = Record<OptionCategory, string | null>;

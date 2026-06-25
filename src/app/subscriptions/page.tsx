@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useCart } from '@/frontend/context/CartContext';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useSound } from '@/context/SoundContext';
+import { useCart } from '@/context/CartContext';
 import { Package, Check, Zap, Award } from 'lucide-react';
-import SubscriptionManager from '@/frontend/components/SubscriptionManager';
+import SubscriptionManager from '@/components/SubscriptionManager';
 
 const TIERS = [
   {

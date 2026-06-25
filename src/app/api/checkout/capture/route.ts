@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { createPrintfulOrder } from '@/shared/lib/printful';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createPrintfulOrder } from '@/lib/printful';
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '';
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET || '';

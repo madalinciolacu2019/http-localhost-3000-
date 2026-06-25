@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { verifyAuth } from '@/shared/lib/auth-server';
+import { verifyAuth } from '@/lib/auth-server';
 
 // Use service role key to query order securely (RLS bypass)
 const supabase = createClient(

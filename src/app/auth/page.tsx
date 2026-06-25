@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useAuth } from '@/context/AuthContext';
+import { useSound } from '@/context/SoundContext';
 import { useRouter } from 'next/navigation';
 import { Flag, ArrowRight, Eye, EyeOff, Zap, AlertCircle, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { isSupabaseConfigured, supabase } from '@/shared/lib/supabase';
-import { isFirebaseConfigured } from '@/shared/lib/firebase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function AuthPage() {
@@ -313,7 +313,7 @@ export default function AuthPage() {
                               redirectTo: `${window.location.origin}/auth`,
                             });
                           } else if (isFirebaseConfigured) {
-                            const { auth: fbAuth } = await import('@/shared/lib/firebase');
+                            const { auth: fbAuth } = await import('@/lib/firebase');
                             if (fbAuth) await sendPasswordResetEmail(fbAuth, email);
                           }
                           setSuccess('Password reset email sent! Check your inbox.');

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/frontend/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { ShieldAlert, Package, Users, Settings } from 'lucide-react';
 
 export default function ManagerDashboard() {

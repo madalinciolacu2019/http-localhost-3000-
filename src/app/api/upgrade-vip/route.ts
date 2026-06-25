@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { verifyAuth } from '@/shared/lib/auth-server';
+import { verifyAuth } from '@/lib/auth-server';
 
 // We need the service role key to bypass RLS and update the user's profile directly
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';

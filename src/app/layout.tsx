@@ -61,17 +61,17 @@ export const viewport = {
   userScalable: false,
 };
 
-import { Providers } from "@/frontend/components/Providers";
-import Navbar from "@/frontend/components/Navbar";
-import LoadingScreen from "@/frontend/components/LoadingScreen";
-import CookieBanner from "@/frontend/components/CookieBanner";
-import DemoWarningBanner from "@/frontend/components/DemoWarningBanner";
-import Footer from "@/frontend/components/Footer";
-import F1Loader from "@/frontend/components/F1Loader";
+import { Providers } from "@/components/Providers";
+import Navbar from "@/components/Navbar";
+import LoadingScreen from "@/components/LoadingScreen";
+import CookieBanner from "@/components/CookieBanner";
+import DemoWarningBanner from "@/components/DemoWarningBanner";
+import Footer from "@/components/Footer";
+import F1Loader from "@/components/F1Loader";
 
-import EcosystemHeader from "@/frontend/components/EcosystemHeader";
-import { CursorGlow } from "@/frontend/components/CursorGlow";
-import LiveTimingTower from "@/frontend/components/LiveTimingTower";
+import EcosystemHeader from "@/components/EcosystemHeader";
+import { CursorGlow } from "@/components/CursorGlow";
+import LiveTimingTower from "@/components/LiveTimingTower";
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 export default function RootLayout({

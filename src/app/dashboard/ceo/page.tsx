@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { useActivityLog } from '@/frontend/context/ActivityLogContext';
+import { useAuth } from '@/context/AuthContext';
+import { useActivityLog } from '@/context/ActivityLogContext';
 import { useRouter } from 'next/navigation';
-import MfaVerification from '@/frontend/components/MfaVerification';
+import MfaVerification from '@/components/MfaVerification';
 import { BarChart3, Users, DollarSign, Activity, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';

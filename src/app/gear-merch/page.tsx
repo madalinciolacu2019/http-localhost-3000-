@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import Product3DViewer from '@/frontend/components/Product3DViewer';
-import { useCart } from '@/frontend/context/CartContext';
-import { useSound } from '@/frontend/context/SoundContext';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import Product3DViewer from '@/components/Product3DViewer';
+import { useCart } from '@/context/CartContext';
+import { useSound } from '@/context/SoundContext';
 import { ShoppingCart } from 'lucide-react';
 
 const MERCH_ITEMS = [

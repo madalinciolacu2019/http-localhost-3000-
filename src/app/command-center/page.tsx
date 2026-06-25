@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, Activity, Users, DollarSign, Power, AlertTriangle, Server, Terminal as TerminalIcon, Package, Zap, Sliders, FlaskConical, TrendingUp, Unlock } from 'lucide-react';
-import { CeoGuard } from '@/frontend/components/CeoGuard';
-import { useAuth } from '@/frontend/context/AuthContext';
-import Navbar from '@/frontend/components/Navbar';
-import { useDatabase } from '@/frontend/context/DatabaseContext';
-import { useSound } from '@/frontend/context/SoundContext';
+import { CeoGuard } from '@/components/CeoGuard';
+import { useAuth } from '@/context/AuthContext';
+import Navbar from '@/components/Navbar';
+import { useDatabase } from '@/context/DatabaseContext';
+import { useSound } from '@/context/SoundContext';
 
 export default function CommandCenterPage() {
   const { user } = useAuth();

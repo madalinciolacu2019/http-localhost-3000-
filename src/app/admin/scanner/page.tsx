@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Scan, CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { useAuth } from '@/frontend/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PointScannerPage() {
   const { user, session } = useAuth();

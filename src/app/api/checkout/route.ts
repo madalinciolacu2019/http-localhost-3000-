@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { z } from 'zod';
-import { safeStringSchema, safeEmailSchema } from '@/shared/lib/security';
+import { safeStringSchema, safeEmailSchema } from '@/lib/security';
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '';
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET || '';

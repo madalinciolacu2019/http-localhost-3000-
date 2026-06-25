@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import { FileText, Printer, ArrowLeft, Download, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/frontend/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 type OrderItem = {
   product_id: number;

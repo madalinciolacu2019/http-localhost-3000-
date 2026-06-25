@@ -6,14 +6,14 @@ import {
   ShoppingCart, Plus, Check, Heart, Ruler, Eye, 
   X, MessageSquare, Star, AlertTriangle, CheckCircle, Activity 
 } from 'lucide-react';
-import { useCart } from '@/frontend/context/CartContext';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { products as baseProducts } from '@/shared/lib/products';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import SizeGuideModal from '@/frontend/components/SizeGuideModal';
-import Product3DViewer from '@/frontend/components/Product3DViewer';
-import TelemetryHUDInspector from '@/frontend/components/TelemetryHUDInspector';
+import { useCart } from '@/context/CartContext';
+import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/context/AuthContext';
+import { products as baseProducts } from '@/lib/products';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import SizeGuideModal from '@/components/SizeGuideModal';
+import Product3DViewer from '@/components/Product3DViewer';
+import TelemetryHUDInspector from '@/components/TelemetryHUDInspector';
 
 type DynamicProduct = any & {
   stock_count: number;

@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Award, Flag, Users } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useSound } from '@/context/SoundContext';
 
 export default function ReferralPage() {
   const router = useRouter();

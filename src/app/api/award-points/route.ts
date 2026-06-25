@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { safeStringSchema, sanitizeInput } from '@/shared/lib/security';
-import { verifyAuth } from '@/shared/lib/auth-server';
+import { safeStringSchema, sanitizeInput } from '@/lib/security';
+import { verifyAuth } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';

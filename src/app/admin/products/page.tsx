@@ -6,9 +6,9 @@ import {
   Coffee, Edit3, Save, TrendingUp, AlertTriangle, 
   RotateCw, Plus, Minus, Check, Layers, DollarSign 
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { products as baseProducts } from '@/shared/lib/products';
-import { useSound } from '@/frontend/context/SoundContext';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { products as baseProducts } from '@/lib/products';
+import { useSound } from '@/context/SoundContext';
 
 type AdminProduct = {
   id: number;
@@ -54,7 +54,7 @@ export default function AdminProductsPage() {
             stock_count: stock,
             price: price,
             is_active: is_active,
-            printful_variant_id: ''
+            printful_variant_id: (p as any).metadata?.printful_variant_id || ''
           });
         });
         setProducts(localList);

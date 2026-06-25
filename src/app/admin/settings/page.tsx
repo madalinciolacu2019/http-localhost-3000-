@@ -6,7 +6,7 @@ import {
   Settings, ShieldCheck, DollarSign, Printer, MessageSquare, 
   Trash2, Play, Sparkles, Check, Info, Plus, Activity
 } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useSound } from '@/context/SoundContext';
 
 export default function AdminSettingsPage() {
   const { playSound } = useSound();

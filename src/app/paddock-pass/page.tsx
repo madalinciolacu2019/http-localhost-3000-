@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import { useAuth } from '@/frontend/context/AuthContext';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, Zap, Trophy, History, Shield, Database, Crosshair, Eye, EyeOff, User, ChevronLeft, Plus } from 'lucide-react';
-import { useSound } from '@/frontend/context/SoundContext';
+import { useSound } from '@/context/SoundContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
-import { useDatabase } from '@/frontend/context/DatabaseContext';
+import { useDatabase } from '@/context/DatabaseContext';
 
 interface Profile {
   email: string;
@@ -410,7 +411,7 @@ export default function PaddockPassPage() {
                     <span className="font-mono text-xs text-white/40 block">Loyalty Points Available</span>
                   </div>
                   <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-pit-yellow/50 to-pit-yellow w-[65%]" />
+                    <div className="h-full bg-gradient-to-r from-pit-yellow/50 to-pit-yellow transition-all duration-1000" style={{ width: `${Math.min(100, (ersPoints / 2000) * 100)}%` }} />
                   </div>
                   <div className="mt-2 flex justify-between font-mono text-[10px] text-white/30">
                     <span>0</span>
@@ -440,6 +441,9 @@ export default function PaddockPassPage() {
                           ? 'You have ultimate override capabilities, global Defcon 1 access, and total platform control.' 
                           : 'You have access to custom telemetry blending, early access to new compound roasts, and priority paddock shipping.'}
                       </p>
+                    </div>
+                    <div className="ml-auto hidden md:block bg-white p-2 rounded-xl border-4 border-racing-red/20 shadow-[0_0_20px_rgba(225,6,0,0.2)] hover:scale-105 transition-transform">
+                       <QRCodeSVG value={`apex-pass-${user.id || 'demo'}`} size={80} fgColor="#0A0A0F" bgColor="#FFFFFF" />
                     </div>
                   </div>
                 </motion.div>

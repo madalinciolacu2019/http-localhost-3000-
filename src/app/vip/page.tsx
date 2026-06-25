@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, CheckCircle, Shield, Zap, ArrowRight, Star } from 'lucide-react';
-import { useAuth } from '@/frontend/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function VipSubscriptionPage() {

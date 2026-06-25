@@ -10,11 +10,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCart } from '@/frontend/context/CartContext';
-import { useSound } from '@/frontend/context/SoundContext';
-import { useAuth } from '@/frontend/context/AuthContext';
-import { supabase } from '@/shared/lib/supabase';
-import FiveRedLightsGame from '@/frontend/components/FiveRedLightsGame';
+import { useCart } from '@/context/CartContext';
+import { useSound } from '@/context/SoundContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import FiveRedLightsGame from '@/components/FiveRedLightsGame';
 
 // ─── Order Status Machine Helpers ──────────────────────────────────────────────
 const getStages = (method: 'counter' | 'trackside' | 'drone') => {

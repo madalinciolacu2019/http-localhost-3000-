@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/frontend/components/Navbar';
-import Footer from '@/frontend/components/Footer';
-import { f1Races, getNextRace, parseLocalDate } from '@/shared/lib/f1Calendar';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { f1Races, getNextRace, parseLocalDate } from '@/lib/f1Calendar';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, CloudRain, Thermometer, Flag, Moon } from 'lucide-react';
 
