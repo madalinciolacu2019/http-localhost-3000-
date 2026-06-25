@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Apex Brews',
   webDir: 'public',
   server: {
-    url: 'https://apexbrews.vercel.app',
+    url: 'https://apexbrew.netlify.app',
     cleartext: true
   }
 };
