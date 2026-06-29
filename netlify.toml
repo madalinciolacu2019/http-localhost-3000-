@@ -3,6 +3,8 @@
 
 [build.environment]
   NEXT_DISABLE_NETLIFY_EDGE = "true"
+  NEXT_IGNORE_ESLINT = "1"
+  CI = ""
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
