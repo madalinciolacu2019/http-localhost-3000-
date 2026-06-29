@@ -22,7 +22,6 @@ type AdminProduct = {
   color: string;
   is_active: boolean;
   printful_variant_id?: string;
-  printful_variant_id?: string;
 };
 
 export default function AdminProductsPage() {
@@ -31,7 +30,6 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
-  const [editVariantId, setEditVariantId] = useState<string>('');
   const [editVariantId, setEditVariantId] = useState<string>('');
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
@@ -56,8 +54,7 @@ export default function AdminProductsPage() {
             stock_count: stock,
             price: price,
             is_active: is_active,
-            printful_variant_id: p.metadata?.printful_variant_id || '',
-            printful_variant_id: (p as any).metadata?.printful_variant_id || ''
+            printful_variant_id: p.metadata?.printful_variant_id || ''
           });
         });
         setProducts(localList);
@@ -80,7 +77,6 @@ export default function AdminProductsPage() {
               image: d.metadata?.image || '/menu_espresso_turbo.png',
               color: d.metadata?.color || 'red',
               is_active: d.metadata?.is_active ?? true,
-              printful_variant_id: d.metadata?.printful_variant_id || '',
               printful_variant_id: d.metadata?.printful_variant_id || ''
             }));
             setProducts(formatted);
@@ -127,11 +123,9 @@ export default function AdminProductsPage() {
     setEditingId(p.id);
     setEditPrice(p.price.toFixed(2));
     setEditVariantId(p.printful_variant_id || '');
-    setEditVariantId(p.printful_variant_id || '');
   };
 
   const handleSavePrice = async (id: number) => {
-    const newVariantId = editVariantId;
     const newVariantId = editVariantId;
     playSound('gear-shift');
     const newPriceVal = parseFloat(editPrice);
