@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Lazy initialization to prevent build-time crashes
-let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+let supabaseAdmin: any = null;
 const getSupabaseAdmin = () => {
   if (!supabaseAdmin && supabaseUrl && supabaseServiceKey) {
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -85,11 +85,11 @@ export async function POST(req: Request) {
     }
 
     // First fetch the user's current profile to get current points and VIP status
-    const { data: profile, error: fetchError } = await adminClient
+    const { data: profile, error: fetchError } = (await adminClient
       .from('profiles')
       .select('credits, xp, is_vip, level')
       .eq('id', userId)
-      .single();
+      .single()) as { data: any; error: any };
 
     if (fetchError || !profile) {
       console.error('Fetch error:', fetchError);
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
     // Check auth metadata as fallback for VIP
     const { data: { user: dbUser } } = await adminClient.auth.admin.getUserById(userId);
-    const isVip = profile.is_vip || dbUser?.user_metadata?.is_vip === true;
+    const isVip = (profile as any)?.is_vip || dbUser?.user_metadata?.is_vip === true;
 
     // Apply VIP Multiplier
     const finalPoints = isVip ? points * 2 : points;
