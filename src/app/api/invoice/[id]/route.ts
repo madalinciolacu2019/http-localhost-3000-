@@ -3,10 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from '@/lib/auth-server';
 
 // Use service role key to query order securely (RLS bypass)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+let supabase: ReturnType<typeof createClient> | null = null;
+const getSupabase = () => {
+  if (!supabase && supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabase;
+};
 
 export async function GET(
   req: NextRequest,
@@ -23,8 +29,13 @@ export async function GET(
       return NextResponse.json({ error: 'Missing order id' }, { status: 400 });
     }
 
+    const client = getSupabase();
+    if (!client) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     // Retrieve order
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await client
       .from('orders')
       .select('*')
       .eq('id', id)
@@ -40,7 +51,7 @@ export async function GET(
     }
 
     // Retrieve order items
-    const { data: items, error: itemsError } = await supabase
+    const { data: items, error: itemsError } = await client
       .from('order_items')
       .select('*')
       .eq('order_id', id);

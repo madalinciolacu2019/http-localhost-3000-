@@ -6,7 +6,13 @@ import { verifyAuth } from '@/lib/auth-server';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+const getSupabaseAdmin = () => {
+  if (!supabaseAdmin && supabaseUrl && supabaseServiceKey) {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseAdmin;
+};
 
 export async function POST(req: Request) {
   try {
@@ -31,18 +37,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, mocked: true });
     }
 
-    // Update the profile table
-    const { error: dbError } = await supabaseAdmin
+    // Update
+    const adminClient = getSupabaseAdmin();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
+    // Process upgrade
+    const { error: updateError } = await adminClient
       .from('profiles')
       .update({ is_vip: true })
       .eq('id', userId);
 
-    if (dbError) {
-      console.error('Database update error:', dbError);
+    if (updateError) {
+      console.error('Update error:', updateError);
+      return NextResponse.json({ error: 'Failed to update database' }, { status: 500 });
     }
 
+    // Add 5000 bonus credits for becoming VIP!
+    await adminClient.rpc('increment_credits', {
+      user_id: userId,
+      amount: 5000
+    });
+
     // Update Auth user_metadata
-    const { data: updatedUser, error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+    const { data: updatedUser, error: authError } = await adminClient.auth.admin.updateUserById(
       userId,
       { user_metadata: { is_vip: true } }
     );

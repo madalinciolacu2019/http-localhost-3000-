@@ -7,7 +7,14 @@ import { verifyAuth } from '@/lib/auth-server';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Lazy initialization to prevent build-time crashes
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+const getSupabaseAdmin = () => {
+  if (!supabaseAdmin && supabaseUrl && supabaseServiceKey) {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseAdmin;
+};
 
 // 1. Strict Input Validation Schema
 const awardPointsSchema = z.object({
@@ -72,8 +79,13 @@ export async function POST(req: Request) {
       });
     }
 
+    const adminClient = getSupabaseAdmin();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
     // First fetch the user's current profile to get current points and VIP status
-    const { data: profile, error: fetchError } = await supabaseAdmin
+    const { data: profile, error: fetchError } = await adminClient
       .from('profiles')
       .select('credits, xp, is_vip, level')
       .eq('id', userId)
@@ -85,7 +97,7 @@ export async function POST(req: Request) {
     }
 
     // Check auth metadata as fallback for VIP
-    const { data: { user: dbUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const { data: { user: dbUser } } = await adminClient.auth.admin.getUserById(userId);
     const isVip = profile.is_vip || dbUser?.user_metadata?.is_vip === true;
 
     // Apply VIP Multiplier
@@ -98,7 +110,7 @@ export async function POST(req: Request) {
     const newLevel = Math.max(profile.level || 1, Math.floor(newXp / 1000) + 1);
 
     // Update the profile
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await adminClient
       .from('profiles')
       .update({
         credits: newCredits,

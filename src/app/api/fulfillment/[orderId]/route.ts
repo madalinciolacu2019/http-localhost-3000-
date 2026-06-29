@@ -3,10 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { getPrintfulOrderStatus, isPrintfulConfigured } from '@/lib/printful';
 import { verifyAuth } from '@/lib/auth-server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+let supabase: ReturnType<typeof createClient> | null = null;
+const getSupabase = () => {
+  if (!supabase && supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabase;
+};
 
 /**
  * GET /api/fulfillment/[orderId]
@@ -30,8 +36,13 @@ export async function GET(
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
     }
 
+    const client = getSupabase();
+    if (!client) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     // Fetch order from Supabase
-    const { data: order, error } = await supabase
+    const { data: order, error } = await client
       .from('orders')
       .select(
         'id, user_id, status, fulfillment_status, printful_order_id, tracking_number, tracking_url'
@@ -74,7 +85,7 @@ export async function GET(
         liveStatus.trackingNumber &&
         liveStatus.trackingNumber !== order.tracking_number
       ) {
-        await supabase
+        await client
           .from('orders')
           .update({
             tracking_number: liveStatus.trackingNumber,
