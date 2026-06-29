@@ -22,6 +22,7 @@ type AdminProduct = {
   color: string;
   is_active: boolean;
   printful_variant_id?: string;
+  printful_variant_id?: string;
 };
 
 export default function AdminProductsPage() {
@@ -30,6 +31,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
+  const [editVariantId, setEditVariantId] = useState<string>('');
   const [editVariantId, setEditVariantId] = useState<string>('');
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
@@ -54,6 +56,7 @@ export default function AdminProductsPage() {
             stock_count: stock,
             price: price,
             is_active: is_active,
+            printful_variant_id: p.metadata?.printful_variant_id || '',
             printful_variant_id: (p as any).metadata?.printful_variant_id || ''
           });
         });
@@ -77,6 +80,7 @@ export default function AdminProductsPage() {
               image: d.metadata?.image || '/menu_espresso_turbo.png',
               color: d.metadata?.color || 'red',
               is_active: d.metadata?.is_active ?? true,
+              printful_variant_id: d.metadata?.printful_variant_id || '',
               printful_variant_id: d.metadata?.printful_variant_id || ''
             }));
             setProducts(formatted);
@@ -123,9 +127,11 @@ export default function AdminProductsPage() {
     setEditingId(p.id);
     setEditPrice(p.price.toFixed(2));
     setEditVariantId(p.printful_variant_id || '');
+    setEditVariantId(p.printful_variant_id || '');
   };
 
   const handleSavePrice = async (id: number) => {
+    const newVariantId = editVariantId;
     const newVariantId = editVariantId;
     playSound('gear-shift');
     const newPriceVal = parseFloat(editPrice);
@@ -169,6 +175,7 @@ export default function AdminProductsPage() {
       const { data: dbItem } = await supabase.from('products').select('metadata').eq('id', id).single();
       const nextMeta = { ...(dbItem?.metadata || {}) };
       if (updates.is_active !== undefined) nextMeta.is_active = updates.is_active;
+      if (updates.printful_variant_id !== undefined) nextMeta.printful_variant_id = updates.printful_variant_id;
       if (updates.printful_variant_id !== undefined) nextMeta.printful_variant_id = updates.printful_variant_id;
 
       const dbUpdates: any = {};
@@ -336,7 +343,17 @@ export default function AdminProductsPage() {
                       <div className="flex items-center gap-2 mt-1.5">
                         
                         <div className="flex flex-col">
+                          
+                        <div className="flex flex-col">
                           <span className="font-orbitron font-black text-racing-red text-sm">€{product.price.toFixed(2)}</span>
+                          {product.category === 'Merchandise' && product.printful_variant_id && (
+                            <span className="text-[8px] font-mono text-white/40 mt-1">Printful ID: {product.printful_variant_id}</span>
+                          )}
+                          {product.category === 'Merchandise' && !product.printful_variant_id && (
+                            <span className="text-[8px] font-mono text-yellow-500 mt-1">Printful ID: Missing!</span>
+                          )}
+                        </div>
+
                           {product.category === 'Merchandise' && product.printful_variant_id && (
                             <span className="text-[8px] font-mono text-white/40 mt-1">Printful ID: {product.printful_variant_id}</span>
                           )}
